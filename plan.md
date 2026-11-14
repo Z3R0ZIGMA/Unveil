@@ -7,6 +7,10 @@
 - **Who uses it:** a technician runs `Unveil.exe` on the client's laptop. There is no RMM or command-line use.
 - **Removed:** CLI mode (section 7, the `--cli` switch, exit codes, `Unveil.Cli.exe`) and report branding (company
   name/logo/footer in sections 6 and 8). The HTML report always says "Unveil".
+- **Removed:** the "Find replacement" button (sections 3 and 5). Batteries are ordered from a supplier; Unveil shows the
+  laptop model, battery name and any part hint, and makes no outbound connections at all.
+- **Deferred:** code signing (Phase 8). The user will handle it later; until then the release README explains the
+  SmartScreen warning.
 - **Kept from section 8:** `unveil.json` for thresholds and extra known offenders.
 - **Added:** "Save samples" in the app (scrubbed raw data to improve support for new laptop models), power settings
   checks with an idle-apps rule, and RMM/security agents as known battery drainers.
@@ -42,7 +46,7 @@ Unveil is a portable Windows tool. A tech can run it from a USB stick or push it
 | Manufacture date | `BatteryStaticData.ManufactureDate` or battery report |
 | Laptop make / model / serial | `Win32_ComputerSystem`, `Win32_ComputerSystemProduct`, `Win32_BIOS` (needed to source a replacement) |
 
-Note: many OEMs do not expose a true replacement part number. Show what is available. Then show a **"Find replacement"** button that opens a web search for `<laptop model> <battery DeviceName> battery`.
+Note: many OEMs do not expose a true replacement part number. Show what is available (laptop model, battery name, any part hint) so the technician can order from their supplier.
 
 ### 3.2 Battery health
 | Field | Source |
@@ -132,7 +136,7 @@ Single window with:
 - **Capacity history chart:** from the battery report
 - **Power hogs table:** Live tab / Last 24h tab / Sleep tab
 - **Settings card:** power plan, brightness, refresh rate, battery saver, startup apps, with warnings highlighted
-- **Buttons:** Run Full Test (guided: unplug → 60 s sample → results), Restart as Admin, Export Report, Find Replacement, Copy Summary
+- **Buttons:** Run Full Test (guided: unplug → 60 s sample → results), Restart as Admin, Export Report, Copy Summary
 
 ### 5.1 Theme (dark mode, matches the Unbound app)
 
@@ -226,7 +230,7 @@ Unveil/
 5. **Admin features.** SRUM, sleep study, energy report parsing, Restart as Admin.
 6. **Settings checks + recommendations.**
 7. **CLI mode, config file, branding, single-file publish** (`dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true`, plus `win-arm64`).
-8. **Polish.** Comparison with previous reports, Find Replacement button, code-signing notes.
+8. **Polish.** Comparison with previous reports. (Code signing is deferred: the user will handle it later.)
 
 ## 12. Definition of done
 
