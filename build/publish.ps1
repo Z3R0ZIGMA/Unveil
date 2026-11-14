@@ -6,7 +6,8 @@
   Output: dist\Unveil-<version>\win-x64\ and dist\Unveil-<version>\win-arm64\, each with
     Unveil.exe    the app (no .NET install needed on the laptop)
     README.txt    how to use it
-  a zip of each folder (Unveil-<version>-<rid>.zip, for the GitHub release) and SHA256SUMS.txt. unveil.json (thresholds) is created next to Unveil.exe on first run.
+  and dist\Unveil-<version>\github\ with what goes on the GitHub release: Unveil.exe (x64), Unveil-arm64.exe and
+  SHA256SUMS.txt. unveil.json (thresholds) is created next to Unveil.exe on first run.
 
   Publish settings (self-contained, single file) live in the .csproj, not here.
 
@@ -62,15 +63,16 @@ If Windows shows "Windows protected your PC", click More info > Run anyway (the 
 "@ | Set-Content (Join-Path $out "README.txt") -Encoding UTF8
 }
 
-# One zip per architecture, for the GitHub release.
-foreach ($rid in "win-x64", "win-arm64") {
-    Compress-Archive -Path (Join-Path $dist "$rid\*") -DestinationPath (Join-Path $dist "Unveil-$version-$rid.zip") -Force
+# The GitHub release offers the exes themselves, not zips (as Unbound does). Unzipping with Windows copies the
+# downloaded-from-the-internet mark onto the exe inside, so SmartScreen checks it again when it is opened.
+$github = Join-Path $dist "github"
+New-Item -ItemType Directory -Force $github | Out-Null
+Copy-Item (Join-Path $dist "win-x64\Unveil.exe") (Join-Path $github "Unveil.exe")
+Copy-Item (Join-Path $dist "win-arm64\Unveil.exe") (Join-Path $github "Unveil-arm64.exe")
+$sums = Get-ChildItem $github -File -Filter *.exe | Sort-Object Name | ForEach-Object {
+    "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
 }
-
-$sums = Get-ChildItem $dist -Recurse -File | Where-Object { $_.Extension -in ".exe", ".zip" } | ForEach-Object {
-    "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.FullName.Substring($dist.Length + 1).Replace('\', '/')
-}
-$sums | Set-Content (Join-Path $dist "SHA256SUMS.txt") -Encoding ASCII
+$sums | Set-Content (Join-Path $github "SHA256SUMS.txt") -Encoding ASCII
 
 Write-Host ""
 Write-Host "Release $version in $dist"

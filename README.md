@@ -15,12 +15,13 @@ battery is worn out or something on the laptop is draining it.
 - Nothing to install: `Unveil.exe` is a single self-contained file. It runs as a standard user.
 
 ## Get it
-Download `Unveil-<version>-win-x64.zip` (or `win-arm64`) from the
-[Releases](https://github.com/Z3R0ZIGMA/Unveil/releases) page, unzip it to a USB stick and double-click `Unveil.exe`
-on the laptop. Or build it yourself (see [DEVELOPMENT.md](DEVELOPMENT.md)).
+Download `Unveil.exe` from the [Releases](https://github.com/Z3R0ZIGMA/Unveil/releases) page
+(`Unveil-arm64.exe` for Windows on ARM), copy it to a USB stick and double-click it on the laptop. Or build it
+yourself (see [DEVELOPMENT.md](DEVELOPMENT.md)).
 
-Unveil is not code-signed yet, so Windows may show "Windows protected your PC". Click **More info > Run anyway**.
-`SHA256SUMS.txt` in each release lets you check the download.
+Unveil is not code-signed yet, so Windows may still show "Windows protected your PC". If it does, click
+**More info > Run anyway**. To check your download, run `Get-FileHash Unveil.exe` in PowerShell and compare the
+result with `SHA256SUMS.txt` on the release.
 
 ## Use it
 - **The dashboard** opens with the verdict (healthy, software/settings issue, battery worn, replace battery, both,

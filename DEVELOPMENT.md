@@ -19,9 +19,16 @@ of the app.
 powershell -ExecutionPolicy Bypass -File build\publish.ps1
 ```
 This builds `dist\Unveil-<version>\`:
-- `win-x64\` and `win-arm64\`, each with `Unveil.exe` and a `README.txt`
-- a zip of each, for the GitHub release
-- `SHA256SUMS.txt`
+- `win-x64\` and `win-arm64\`, each with `Unveil.exe` and a `README.txt` (for a USB stick)
+- `github\`, exactly what goes on the GitHub release: `Unveil.exe` (x64), `Unveil-arm64.exe` and `SHA256SUMS.txt`
+
+The release offers the exes themselves, not zips. Windows marks downloaded files as coming from the internet, and
+unzipping with Windows copies that mark onto the exe inside, so SmartScreen checks it again when it is opened. Unveil
+is not code-signed, so SmartScreen can still warn about a new download in some cases; signing is for later.
+
+```
+gh release create v<version> dist\Unveil-<version>\github\Unveil.exe dist\Unveil-<version>\github\Unveil-arm64.exe dist\Unveil-<version>\github\SHA256SUMS.txt --title "Unveil <version>" --notes-file <notes.md>
+```
 
 The version comes from `Directory.Build.props`. The publish settings (self-contained, single file, both runtimes) live
 in `src/Unveil.App/Unveil.App.csproj`, never in a `.pubxml`.
