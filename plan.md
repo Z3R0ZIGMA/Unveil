@@ -4,6 +4,8 @@
 
 ## Changes since the plan (decided during the build)
 
+**Status (version 0.8.1):** all eight phases are done. Code signing is deferred.
+
 - **Who uses it:** a technician runs `Unveil.exe` on the client's laptop. There is no RMM or command-line use.
 - **Removed:** CLI mode (section 7, the `--cli` switch, exit codes, `Unveil.Cli.exe`) and report branding (company
   name/logo/footer in sections 6 and 8). The HTML report always says "Unveil".
@@ -19,6 +21,14 @@
   checks with an idle-apps rule, and RMM/security agents as known battery drainers.
 - **Verdict:** a battery at 60-79% gets a softer "Battery worn" verdict; the 10%-in-30-days drop must be sustained over
   the last 3 history entries; "Inconclusive" when health cannot be measured.
+- **App names (after Phase 8):** Windows' own processes get plain names and a one-line role ("Desktop Window Manager:
+  draws everything on the screen"). Apps with the same name are merged into one row. Service names are read from the
+  Windows service list, so they also work as a standard user.
+- **Privacy:** [PRIVACY.md](PRIVACY.md) describes exactly what is read and written. Reports leave out the computer name,
+  Wi-Fi network names, MAC addresses, account SIDs and user folder names (section 2 asked only for no telemetry and
+  no network calls).
+- **Docs:** user guide in README.md; building, testing and ground rules in [DEVELOPMENT.md](DEVELOPMENT.md).
+- **Section 1 and 7:** "push it through RMM" no longer applies; Unveil is always run interactively.
 
 ## 1. Purpose
 

@@ -227,7 +227,8 @@ public static partial class SrumParser
     /// Turns a SRUM app ID into a readable name, and returns the executable name (without extension) when there is one:
     /// <list type="bullet">
     /// <item>"\Device\HarddiskVolume3\...\chrome.exe" becomes "chrome"</item>
-    /// <item>"...\svchost.exe [DcomLaunch] [x]" becomes "svchost (DcomLaunch, x)" (also when Windows cut off the last "]")</item>
+    /// <item>"...\svchost.exe [DcomLaunch] [x]" becomes "Windows service (DcomLaunch, x)" (also when Windows cut off the last "]")</item>
+    /// <item>Windows' own processes get a plain name: "...\dwm.exe" becomes "Desktop Window Manager", "System" becomes "Windows kernel and drivers"</item>
     /// <item>"...\AnyDesk\AnyDesk" or "...\chcp.com" become "AnyDesk" / "chcp"</item>
     /// <item>"Microsoft.OutlookForWindows_1.2026.1026.100_x64__8wekyb3d8bbwe" becomes "Microsoft.OutlookForWindows" (all versions merge)</item>
     /// <item>anything else ("System", "MemCompression") is kept as-is</item>
@@ -244,7 +245,13 @@ public static partial class SrumParser
             {
                 var exe = segment[..exeAt];
                 var services = ServiceTag().Matches(segment[(exeAt + 4)..]).Select(m => m.Groups[1].Value.Trim()).Where(v => v.Length > 0).ToList();
-                return (services.Count > 0 ? $"{exe} ({string.Join(", ", services)})" : exe, exe);
+                if (services.Count > 0)
+                {
+                    var host = exe.Equals("svchost", StringComparison.OrdinalIgnoreCase) ? "Windows service" : exe;
+                    return ($"{host} ({string.Join(", ", services)})", exe);
+                }
+
+                return (Power.WindowsProcesses.Describe(exe)?.Name ?? exe, exe);
             }
 
             var name = Path.GetFileNameWithoutExtension(segment);
@@ -254,7 +261,8 @@ public static partial class SrumParser
         var package = PackageName().Match(id);
         if (!package.Success)
         {
-            return (id, null);
+            // "System", "MemCompression": Windows itself.
+            return Power.WindowsProcesses.Describe(id) is { } windows ? (windows.Name, id) : (id, null);
         }
 
         // "5319275A.WhatsAppDesktop" -> "WhatsAppDesktop": drop the 8-hex-digit publisher code some Store apps carry.

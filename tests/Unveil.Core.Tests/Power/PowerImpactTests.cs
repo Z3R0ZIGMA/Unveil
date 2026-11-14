@@ -142,6 +142,61 @@ public class PowerImpactTests
         Assert.Equal("Windows Update", result.Apps[0].Offender?.Category);
     }
 
+    [Fact]
+    public void Windows_processes_get_a_plain_name_and_a_note()
+    {
+        var result = PowerImpact.Analyze(
+            [At(0, [P(1, "dwm", 0), P(2, "chrome", 0)]), At(10, [P(1, "dwm", 1), P(2, "chrome", 1)])],
+            coreCount: 1);
+
+        var dwm = result.Apps.Single(a => a.Name == "dwm");
+        Assert.Equal("Desktop Window Manager", dwm.DisplayName);
+        Assert.Equal("Part of Windows: draws everything on the screen", dwm.Note);
+
+        var chrome = result.Apps.Single(a => a.Name == "chrome");
+        Assert.Equal("chrome", chrome.DisplayName);
+        Assert.Null(chrome.Note);
+    }
+
+    [Fact]
+    public void Apps_with_the_same_display_name_are_merged()
+    {
+        // Two different exes from the same product with the same file description (e.g. N-able Take Control).
+        var result = PowerImpact.Analyze(
+        [
+            At(0, [P(1, "BASupSrvc", 0), P(2, "BASupSrvcUpdater", 0), P(3, "notepad", 0)]),
+            At(10, [P(1, "BASupSrvc", 2), P(2, "BASupSrvcUpdater", 1), P(3, "notepad", 2.5)]),
+        ], coreCount: 1);
+        result = result with
+        {
+            Apps = result.Apps.Select(a => a.Name.StartsWith("BASup", StringComparison.Ordinal) ? a with { DisplayName = "N-able Take Control Agent" } : a).ToList(),
+        };
+
+        var merged = PowerImpact.MergeByDisplayName(result);
+
+        Assert.Equal(2, merged.Apps.Count);
+        var agent = merged.Apps[0];
+        Assert.Equal("N-able Take Control Agent", agent.DisplayName);
+        Assert.Equal("BASupSrvc", agent.Name);
+        Assert.Equal(2, agent.ProcessCount);
+        Assert.Equal(30.0, agent.CpuPercent, 6);
+        Assert.Equal(100.0 * 18 / 33, agent.SharePercent, 6);
+        Assert.Equal(["BASupSrvc", "BASupSrvcUpdater"], agent.Processes.Select(p => p.Name));
+        Assert.Equal("notepad", merged.Apps[1].Name);
+    }
+
+    [Theory]
+    [InlineData("\"C:\\Program Files (x86)\\Take Control Agent\\BASupSrvc.exe\"", @"C:\Program Files (x86)\Take Control Agent\BASupSrvc.exe")]
+    [InlineData("\"C:\\Program Files\\Managed Antivirus\\EPSecurityService.exe\" /service", @"C:\Program Files\Managed Antivirus\EPSecurityService.exe")]
+    [InlineData(@"C:\WINDOWS\system32\SearchIndexer.exe /Embedding", @"C:\WINDOWS\system32\SearchIndexer.exe")]
+    [InlineData(@"C:\Windows\system32\svchost.exe -k netsvcs -p", @"C:\Windows\system32\svchost.exe")]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void Service_command_lines_give_the_exe_path(string? commandLine, string? expected)
+    {
+        Assert.Equal(expected, AppNames.ExePath(commandLine));
+    }
+
     [Theory]
     [InlineData("chrome#3", "chrome")]
     [InlineData("svchost", "svchost")]

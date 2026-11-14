@@ -109,7 +109,7 @@ public sealed class DrainTest(
         }
 
         var result = PowerImpact.Analyze(snapshots, Environment.ProcessorCount, new HashSet<int> { Environment.ProcessId });
-        result = AppNames.Resolve(result, options.TopAppCount);
+        result = PowerImpact.MergeByDisplayName(AppNames.Resolve(result, options.TopAppCount));
 
         if (watts.Count == 0)
         {

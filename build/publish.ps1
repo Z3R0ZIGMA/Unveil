@@ -6,7 +6,7 @@
   Output: dist\Unveil-<version>\win-x64\ and dist\Unveil-<version>\win-arm64\, each with
     Unveil.exe    the app (no .NET install needed on the laptop)
     README.txt    how to use it
-  plus SHA256SUMS.txt for the whole release. unveil.json (thresholds) is created next to Unveil.exe on first run.
+  a zip of each folder (Unveil-<version>-<rid>.zip, for the GitHub release) and SHA256SUMS.txt. unveil.json (thresholds) is created next to Unveil.exe on first run.
 
   Publish settings (self-contained, single file) live in the .csproj, not here.
 
@@ -54,11 +54,20 @@ Double-click Unveil.exe. Nothing to install; all data stays on the laptop.
 unveil.json is created next to Unveil.exe on first run. Edit it to change the thresholds (health, power
 draw limits per laptop type, sleep, settings checks) or to flag extra battery-draining apps.
 
+Privacy: Unveil makes no network connections and sends nothing anywhere. It only reads; it never changes
+settings. Exported reports contain the laptop and battery serial numbers: treat them as client data.
+Details: https://github.com/Z3R0ZIGMA/Unveil/blob/main/PRIVACY.md
+
 If Windows shows "Windows protected your PC", click More info > Run anyway (the app is not code-signed yet).
 "@ | Set-Content (Join-Path $out "README.txt") -Encoding UTF8
 }
 
-$sums = Get-ChildItem $dist -Recurse -File | Where-Object Extension -eq ".exe" | ForEach-Object {
+# One zip per architecture, for the GitHub release.
+foreach ($rid in "win-x64", "win-arm64") {
+    Compress-Archive -Path (Join-Path $dist "$rid\*") -DestinationPath (Join-Path $dist "Unveil-$version-$rid.zip") -Force
+}
+
+$sums = Get-ChildItem $dist -Recurse -File | Where-Object { $_.Extension -in ".exe", ".zip" } | ForEach-Object {
     "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.FullName.Substring($dist.Length + 1).Replace('\', '/')
 }
 $sums | Set-Content (Join-Path $dist "SHA256SUMS.txt") -Encoding ASCII

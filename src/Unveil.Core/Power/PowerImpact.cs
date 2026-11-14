@@ -16,6 +16,9 @@ public sealed record AppUsage
     /// <summary>Friendly name (file description) when known, otherwise the executable name.</summary>
     public string DisplayName { get; init; } = "";
 
+    /// <summary>For Windows' own processes: what it does, e.g. "Part of Windows: draws everything on the screen".</summary>
+    public string? Note { get; init; }
+
     public int ProcessCount { get; init; }
 
     public double CpuPercent { get; init; }
@@ -138,10 +141,12 @@ public static class PowerImpact
             .Select(g =>
             {
                 var impact = g.Sum(p => p.Impact);
+                var windows = WindowsProcesses.Describe(g.First().Name);
                 return new AppUsage
                 {
                     Name = g.First().Name,
-                    DisplayName = g.First().Name,
+                    DisplayName = windows?.Name ?? g.First().Name,
+                    Note = windows?.Note,
                     ProcessCount = g.Count(),
                     CpuPercent = g.Sum(p => p.CpuPercent),
                     GpuPercent = Math.Min(100, g.Sum(p => p.GpuPercent)),
@@ -164,6 +169,42 @@ public static class PowerImpact
             Apps = apps,
             TotalCpuPercent = Math.Min(100, processes.Sum(p => p.CpuPercent)),
         };
+    }
+
+    /// <summary>
+    /// Combines apps that ended up with the same display name, e.g. two N-able Take Control exes that share a file
+    /// description, into one row. The processes list still shows each exe.
+    /// </summary>
+    public static ActivityResult MergeByDisplayName(ActivityResult result)
+    {
+        var apps = result.Apps
+            .GroupBy(a => a.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .Select(g =>
+            {
+                if (g.Count() == 1)
+                {
+                    return g.First();
+                }
+
+                var first = g.MaxBy(a => a.Impact)!;
+                return first with
+                {
+                    ProcessCount = g.Sum(a => a.ProcessCount),
+                    CpuPercent = g.Sum(a => a.CpuPercent),
+                    GpuPercent = Math.Min(100, g.Sum(a => a.GpuPercent)),
+                    IoBytesPerSecond = g.Sum(a => a.IoBytesPerSecond),
+                    Impact = g.Sum(a => a.Impact),
+                    SharePercent = g.Sum(a => a.SharePercent),
+                    Offender = first.Offender ?? g.Select(a => a.Offender).FirstOrDefault(o => o is not null),
+                    Note = first.Note ?? g.Select(a => a.Note).FirstOrDefault(n => n is not null),
+                    Processes = g.SelectMany(a => a.Processes).OrderByDescending(p => p.Impact).ToList(),
+                };
+            })
+            .OrderByDescending(a => a.Impact)
+            .ThenBy(a => a.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return result with { Apps = apps };
     }
 
     private static TimeSpan Positive(TimeSpan t) => t > TimeSpan.Zero ? t : TimeSpan.Zero;

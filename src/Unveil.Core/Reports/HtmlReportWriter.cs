@@ -322,7 +322,8 @@ public static class HtmlReportWriter
         foreach (var app in activity.Apps.Take(15))
         {
             var note = app.Offender is { } o ? $"<div class=\"note sev-warning\"><span class=\"dot\" aria-hidden=\"true\">!</span>{E(o.Category)}</div>" : "";
-            var count = app.ProcessCount > 1 ? $" <span class=\"muted\">({app.ProcessCount} processes)</span>" : "";
+            var count = (app.ProcessCount > 1 ? $" <span class=\"muted\">({app.ProcessCount} processes)</span>" : "") +
+                        (app.Note is { } windowsNote ? $"<div class=\"muted small\">{E(windowsNote)}</div>" : "");
             html.Append($"<tr><td>{E(app.DisplayName)}{count}{note}</td>" +
                         $"<td class=\"num\">{E(Percent(app.SharePercent, "0"))}</td>" +
                         $"<td class=\"bar-col\"><div class=\"bar\"><span style=\"width:{Math.Clamp(app.SharePercent, 0, 100).ToString("0.#", Inv)}%\"></span></div></td>" +

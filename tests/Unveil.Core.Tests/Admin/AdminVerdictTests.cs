@@ -197,6 +197,28 @@ public class SampleScrubberTests
     }
 
     [Fact]
+    public void Energy_details_shown_in_reports_leave_out_wifi_names_macs_and_user_folders()
+    {
+        var doc = XDocument.Parse("""
+            <EnergyReport xmlns="http://schemas.microsoft.com/energy/2007">
+              <LogEntry guid="x"><Severity>Warning</Severity><Name>Wireless access point does not support WMM Power Save</Name>
+                <Details>
+                  <Detail><Name>SSID</Name><Value>Smith Family WiFi</Value></Detail>
+                  <Detail><Name>MAC Address</Name><Value>e8:78:29:14:b1:18</Value></Detail>
+                  <Detail><Name>Requesting Process</Name><Value>\Device\HarddiskVolume3\Users\jsmith\AppData\Local\app.exe</Value></Detail>
+                </Details>
+              </LogEntry>
+            </EnergyReport>
+            """);
+
+        var details = EnergyDiagnosticsParser.Parse(doc).Findings.Single().Occurrences.Single();
+
+        Assert.Equal("REDACTED", details.Single(d => d.Key == "SSID").Value);
+        Assert.Equal("REDACTED", details.Single(d => d.Key == "MAC Address").Value);
+        Assert.Equal(@"\Device\HarddiskVolume3\Users\REDACTED\AppData\Local\app.exe", details.Single(d => d.Key == "Requesting Process").Value);
+    }
+
+    [Fact]
     public void Srum_trim_keeps_recent_rows_and_a_sample_of_older_ones()
     {
         var lines = new List<string> { "AppId, TimeStamp" };

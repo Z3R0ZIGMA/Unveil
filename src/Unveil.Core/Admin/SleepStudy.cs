@@ -128,7 +128,7 @@ public static class SleepStudyParser
             HardwareLowPowerPercent = Percent(Ticks(Attr(e, "HwLowPowerStateTime")), duration),
             TopBlockers = Children(Child(e, "TopBlockers"), "TopBlocker")
                 .Select(b => new SleepBlocker(
-                    Attr(b, "Name") ?? "Unknown",
+                    SampleScrubber.Text(Attr(b, "Name") ?? "Unknown", []), // app paths can contain the user folder
                     Attr(b, "Type"),
                     Ticks(Attr(b, "ActiveTime")),
                     double.TryParse(Attr(b, "ScenarioActiveTimePercent"), NumberStyles.Float, CultureInfo.InvariantCulture, out var p) ? p : null))

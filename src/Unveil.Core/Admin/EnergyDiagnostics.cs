@@ -60,6 +60,15 @@ public sealed record EnergyDiagnostics
 
 public static class EnergyDiagnosticsParser
 {
+    /// <summary>
+    /// Details end up in the app and in exported reports, so Wi-Fi network names, MAC addresses, account SIDs and
+    /// user folder names are removed as they are read (PRIVACY.md). The rest (programs, devices) stays.
+    /// </summary>
+    internal static KeyValuePair<string, string> Private(string name, string value) =>
+        new(name, name.Contains("SSID", StringComparison.OrdinalIgnoreCase) && value.Length > 0
+            ? SampleScrubber.Redacted
+            : SampleScrubber.Text(value, []));
+
     public static EnergyDiagnostics Parse(XDocument document)
     {
         var root = document.Root;
@@ -76,7 +85,7 @@ public static class EnergyDiagnosticsParser
             Name = Child(e, "Name")?.Value.Trim() ?? "",
             Description = Child(e, "Description")?.Value.Trim() ?? "",
             Details = (IReadOnlyList<KeyValuePair<string, string>>)Children(Child(e, "Details"), "Detail")
-                .Select(d => new KeyValuePair<string, string>(Child(d, "Name")?.Value.Trim() ?? "", Child(d, "Value")?.Value.Trim() ?? ""))
+                .Select(d => Private(Child(d, "Name")?.Value.Trim() ?? "", Child(d, "Value")?.Value.Trim() ?? ""))
                 .Where(kv => kv.Key.Length > 0)
                 .ToList(),
         }).ToList();

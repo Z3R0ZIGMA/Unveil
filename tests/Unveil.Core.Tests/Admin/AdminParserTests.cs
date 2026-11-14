@@ -25,7 +25,7 @@ public class SrumParserTests
         Assert.Equal(262, day.AppCount);
         Assert.Equal(50.8672, day.UnassignedPercent, 3);
         Assert.Equal(SrumParser.TopApps, day.Apps.Count);
-        Assert.Equal(["Unveil", "Claude", "Unbound", "System"], day.Apps.Take(4).Select(a => a.Name));
+        Assert.Equal(["Unveil", "Claude", "Unbound", "Windows kernel and drivers"], day.Apps.Take(4).Select(a => a.Name));
         Assert.Equal(15.8470, day.Apps[0].SharePercent, 3);
         Assert.Equal(1070573, day.Apps[0].Energy);
     }
@@ -71,9 +71,9 @@ public class SrumParserTests
 
     [Theory]
     [InlineData(@"\Device\HarddiskVolume3\Program Files\Google\Chrome\Application\chrome.exe", "chrome", "chrome")]
-    [InlineData(@"\Device\HarddiskVolume3\Windows\System32\svchost.exe [DcomLaunch]", "svchost (DcomLaunch)", "svchost")]
-    [InlineData(@"\Device\HarddiskVolume3\Windows\System32\svchost.exe [osprivacy] [camsvc]", "svchost (osprivacy, camsvc)", "svchost")]
-    [InlineData(@"\Device\HarddiskVolume3\Windows\System32\svchost.exe [LocalSystemNetworkRestricted] [PrintDeviceConfigurationS", "svchost (LocalSystemNetworkRestricted, PrintDeviceConfigurationS)", "svchost")]
+    [InlineData(@"\Device\HarddiskVolume3\Windows\System32\svchost.exe [DcomLaunch]", "Windows service (DcomLaunch)", "svchost")]
+    [InlineData(@"\Device\HarddiskVolume3\Windows\System32\svchost.exe [osprivacy] [camsvc]", "Windows service (osprivacy, camsvc)", "svchost")]
+    [InlineData(@"\Device\HarddiskVolume3\Windows\System32\svchost.exe [LocalSystemNetworkRestricted] [PrintDeviceConfigurationS", "Windows service (LocalSystemNetworkRestricted, PrintDeviceConfigurationS)", "svchost")]
     [InlineData(@"\Device\HarddiskVolume3\Program Files (x86)\AnyDesk\AnyDesk", "AnyDesk", "AnyDesk")]
     [InlineData(@"\Device\HarddiskVolume3\Windows\System32\chcp.com", "chcp", "chcp")]
     [InlineData("Microsoft.OutlookForWindows_1.2026.1026.100_x64__8wekyb3d8bbwe", "Microsoft.OutlookForWindows", null)]
@@ -81,7 +81,9 @@ public class SrumParserTests
     [InlineData("Claude_5.11492.2.0_x64__pzs8sxrjxfjjc", "Claude", null)]
     [InlineData("5319275A.WhatsAppDesktop_2.2644.101.0_x64__cv1g1gvanyjgm", "WhatsAppDesktop", null)]
     [InlineData("B9ECED6F.ASUSPCAssistant_4.0.82.0_x64__qmba6cd70vzyy", "ASUSPCAssistant", null)]
-    [InlineData("MemCompression", "MemCompression", null)]
+    [InlineData("MemCompression", "Memory Compression", "MemCompression")]
+    [InlineData("System", "Windows kernel and drivers", "System")]
+    [InlineData(@"\Device\HarddiskVolume3\Windows\System32\dwm.exe", "Desktop Window Manager", "dwm")]
     [InlineData("System Interrupts", "System Interrupts", null)]
     public void App_ids_become_readable_names(string appId, string name, string? exe)
     {

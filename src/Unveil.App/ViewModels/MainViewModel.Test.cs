@@ -31,7 +31,8 @@ public sealed class AppRow : ObservableObject
     {
         Rank = rank;
         Name = app.DisplayName;
-        ProcessCountText = app.ProcessCount > 1 ? $"{app.ProcessCount} processes" : null;
+        var subtitle = new[] { app.Note, app.ProcessCount > 1 ? $"{app.ProcessCount} processes" : null }.Where(s => s is not null);
+        ProcessCountText = string.Join(" - ", subtitle) is { Length: > 0 } text ? text : null;
         Share = app.SharePercent;
         ShareText = Percent(app.SharePercent, "0");
         CpuText = Percent(app.CpuPercent);

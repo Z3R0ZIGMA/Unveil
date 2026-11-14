@@ -40,7 +40,8 @@ public sealed class CollectionLog
     {
         lock (_lock)
         {
-            _entries.Add(new LogEntry(level, source, message));
+            // Notes end up in exported reports: keep user folders, account SIDs and MAC addresses out of them (PRIVACY.md).
+            _entries.Add(new LogEntry(level, source, Admin.SampleScrubber.Text(message, [])));
         }
     }
 }
