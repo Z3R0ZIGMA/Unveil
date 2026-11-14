@@ -34,3 +34,16 @@ public class KnownOffendersTests
         Assert.Contains("40 processes", offender!.Advice);
     }
 }
+
+public class AppNamesTests
+{
+    [Theory]
+    [InlineData("SnippingTool.exe", "SnippingTool")]
+    [InlineData("  Google Chrome ", "Google Chrome")]
+    [InlineData("Windows Explorer", "Windows Explorer")]
+    [InlineData(null, null)]
+    public void Descriptions_are_cleaned(string? description, string? expected)
+    {
+        Assert.Equal(expected, AppNames.Clean(description));
+    }
+}

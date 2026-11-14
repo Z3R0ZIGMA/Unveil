@@ -351,9 +351,9 @@ public static class HtmlReportWriter
     private static void SleepTable(StringBuilder html, Admin.SleepStudy sleep)
     {
         html.Append("<section class=\"card\"><h2>Sleep (Modern Standby)</h2>");
-        html.Append(sleep.AveragePercentPerHour is { } rate
+        html.Append(sleep.JudgedPercentPerHour is { } rate
             ? $"<p class=\"muted\">On battery it used {E(Percent(rate))} of a charge per hour while asleep, over {E(Duration(sleep.BatterySleepTime))}. Deep sleep is the share of time in the lowest hardware power state; higher is better.</p>"
-            : "<p class=\"muted\">No sleep on battery long enough to judge in the sleep study period.</p>");
+            : $"<p class=\"muted\">Only {E(Duration(sleep.BatterySleepTime))} of sleep on battery (sessions of 30 minutes or more): too little to judge, at least {E(Duration(Admin.SleepStudy.MinimumJudgedSleep))} is needed. Sessions are listed for reference.</p>");
         if (sleep.Sessions.Count == 0)
         {
             html.Append("</section>\n");

@@ -157,9 +157,9 @@ internal static class ConsoleReport
         if (admin.Sleep is { } sleep)
         {
             Section(o, "SLEEP STUDY");
-            o.WriteLine(sleep.AveragePercentPerHour is { } rate
+            o.WriteLine(sleep.JudgedPercentPerHour is { } rate
                 ? $"  Asleep on battery: {Formatting.Percent(rate)} of a charge per hour over {Formatting.Duration(sleep.BatterySleepTime)} ({sleep.BatterySessions.Count} sessions of 30 min or more)"
-                : "  No sleep on battery long enough to judge.");
+                : $"  Only {Formatting.Duration(sleep.BatterySleepTime)} of sleep on battery: too little to judge (at least {Formatting.Duration(Unveil.Core.Admin.SleepStudy.MinimumJudgedSleep)} needed).");
             foreach (var s in sleep.Sessions.Reverse().Take(5))
             {
                 o.WriteLine($"  {Formatting.DateAndTime(s.Start),-17} {Formatting.Duration(s.Duration),8}  {(s.OnAc ? "AC     " : "battery")}" +

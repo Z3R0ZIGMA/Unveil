@@ -59,6 +59,17 @@ public sealed record SleepStudy
 
     public TimeSpan BatterySleepTime => BatterySessions.Aggregate(TimeSpan.Zero, (t, s) => t + s.Duration);
 
+    /// <summary>
+    /// Less sleep on battery than this is too little to judge: charge readings move in coarse steps, so one short
+    /// session can show 0 mWh used.
+    /// </summary>
+    public static readonly TimeSpan MinimumJudgedSleep = TimeSpan.FromHours(2);
+
+    public bool IsEnoughToJudge => AveragePercentPerHour is not null && BatterySleepTime >= MinimumJudgedSleep;
+
+    /// <summary><see cref="AveragePercentPerHour"/> when there is enough sleep to judge, otherwise null.</summary>
+    public double? JudgedPercentPerHour => IsEnoughToJudge ? AveragePercentPerHour : null;
+
     /// <summary>Time-weighted average % of a charge used per hour while asleep on battery.</summary>
     public double? AveragePercentPerHour
     {

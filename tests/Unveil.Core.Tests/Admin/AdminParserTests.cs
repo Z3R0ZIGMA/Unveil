@@ -204,6 +204,8 @@ public class SleepStudyParserTests
         var judged = Assert.Single(sleep.BatterySessions); // 43 min; the other two are 23 and 12 min
         Assert.Equal(0.0, judged.PercentPerHour);
         Assert.Equal(0.0, sleep.AveragePercentPerHour);
+        Assert.False(sleep.IsEnoughToJudge); // 43 minutes is under the 2-hour minimum
+        Assert.Null(sleep.JudgedPercentPerHour);
     }
 
     [Fact]

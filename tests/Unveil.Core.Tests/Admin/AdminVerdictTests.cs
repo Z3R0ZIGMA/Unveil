@@ -52,6 +52,15 @@ public class AdminVerdictTests
     }
 
     [Fact]
+    public void Too_little_sleep_is_not_judged()
+    {
+        var v = VerdictEngine.Evaluate(Snapshot(WithHealth(90)), admin: Admin(new SleepStudy { Sessions = [Session(1, 5.0)] }));
+
+        Assert.Equal(VerdictKind.Healthy, v.Kind);
+        Assert.Contains(v.Evidence, f => f.Text.Contains("Sleep study: only 1 h 0 m of sleep on battery, too little to judge"));
+    }
+
+    [Fact]
     public void High_sleep_drain_with_a_worn_battery_is_both()
     {
         var v = VerdictEngine.Evaluate(Snapshot(WithHealth(70)), admin: Admin(new SleepStudy { Sessions = [Session(6, 2.5)] }));
@@ -124,7 +133,8 @@ public class AdminVerdictTests
         Assert.Contains("Windows energy diagnostics", html);
         Assert.Contains("USB Device not Entering Selective Suspend", html);
         Assert.DoesNotContain("<script", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Sleep: 0.0% of a charge per hour on battery (1 sessions, 42 m)", text);
+        Assert.DoesNotContain("Sleep:", text); // 42 minutes of sleep on battery is too little to judge
+        Assert.Contains("too little to judge", html);
         Assert.InRange(text.Split('\n').Length, 5, 8);
         Assert.Equal(3, back.Admin!.Sleep!.Sessions.Count);
         Assert.Equal(7, back.Admin.Energy!.ErrorCount);

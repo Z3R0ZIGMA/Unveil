@@ -79,11 +79,11 @@ public static class VerdictEngine
         if (admin.Sleep is { } sleep)
         {
             var sessions = sleep.BatterySessions;
-            if (sleep.AveragePercentPerHour is { } rate)
+            if (sleep.JudgedPercentPerHour is { } rate)
             {
                 var high = rate > settings.HighSleepDrainPercentPerHour;
                 evidence.Add(new Finding(high ? Severity.Warning : Severity.Good,
-                    $"While asleep on battery ({sessions.Count} session{(sessions.Count == 1 ? "" : "s")}, {Duration(sleep.BatterySleepTime)}) " +
+                    $"Sleep study: while asleep on battery ({sessions.Count} session{(sessions.Count == 1 ? "" : "s")}, {Duration(sleep.BatterySleepTime)}) " +
                     $"it used {Percent(rate)} of a charge per hour" +
                     (high ? $"; above {Percent(settings.HighSleepDrainPercentPerHour)}, a full battery is empty after about {Math.Round(100 / rate):0} hours asleep." : ".")));
                 if (high)
@@ -91,9 +91,15 @@ public static class VerdictEngine
                     sleepCause = $"losing {Percent(rate)} of a charge per hour while asleep";
                 }
             }
+            else if (sessions.Count > 0)
+            {
+                evidence.Add(new Finding(Severity.Neutral,
+                    $"Sleep study: only {Duration(sleep.BatterySleepTime)} of sleep on battery, too little to judge " +
+                    $"(at least {Duration(SleepStudy.MinimumJudgedSleep)} is needed)."));
+            }
             else
             {
-                evidence.Add(new Finding(Severity.Neutral, "Sleep study: no sleep on battery long enough to judge in the last few days."));
+                evidence.Add(new Finding(Severity.Neutral, "Sleep study: no sleep on battery of 30 minutes or more in the last few days."));
             }
 
             var shallow = sessions
@@ -334,14 +340,14 @@ public static class VerdictEngine
         if (usage.InUse is { } inUse)
         {
             evidence.Add(new Finding(Severity.Neutral,
-                $"Recent on-battery use averaged {Watts(inUse.AverageWatts)} while in use " +
-                $"({Duration(inUse.Duration)} of use in the battery report)."));
+                $"Battery report: on-battery use averaged {Watts(inUse.AverageWatts)} while in use " +
+                $"({Duration(inUse.Duration)} of use)."));
         }
 
         if (usage.Asleep is { } asleep)
         {
             evidence.Add(new Finding(Severity.Neutral,
-                $"While asleep on battery it used {Watts(asleep.AverageWatts, "0.00")}" +
+                $"Battery report: while asleep on battery ({Duration(asleep.Duration)}) it used {Watts(asleep.AverageWatts, "0.00")}" +
                 (asleep.PercentPerHour is { } pph ? $", about {Percent(pph)} of a full charge per hour." : ".")));
         }
     }

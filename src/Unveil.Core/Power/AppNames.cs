@@ -31,7 +31,7 @@ public static class AppNames
             try
             {
                 using var p = Process.GetProcessById(process.Pid);
-                var description = p.MainModule?.FileVersionInfo.FileDescription?.Trim();
+                var description = Clean(p.MainModule?.FileVersionInfo.FileDescription);
                 if (!string.IsNullOrEmpty(description))
                 {
                     return description;
@@ -45,5 +45,12 @@ public static class AppNames
         }
 
         return app.Name;
+    }
+
+    /// <summary>Some apps' description is just their file name ("SnippingTool.exe"): drop the extension.</summary>
+    internal static string? Clean(string? description)
+    {
+        var d = description?.Trim();
+        return d is not null && d.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? d[..^4].Trim() : d;
     }
 }

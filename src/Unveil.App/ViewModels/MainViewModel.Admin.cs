@@ -203,13 +203,14 @@ public sealed partial class MainViewModel
             }
 
             var settings = Settings;
-            SleepSummary = sleep.AveragePercentPerHour is { } rate
+            SleepSummary = sleep.JudgedPercentPerHour is { } rate
                 ? $"Asleep on battery it used {Percent(rate)} of a charge per hour over {Duration(sleep.BatterySleepTime)} " +
                   $"(sessions of 30 minutes or more). Above {Percent(settings.HighSleepDrainPercentPerHour)} per hour counts as high. " +
                   "Deep sleep is the share of time in the lowest hardware power state: higher is better."
                 : sleep.Sessions.Count == 0
                     ? "No sleep sessions in the sleep study."
-                    : "No sleep on battery of 30 minutes or more to judge. Sessions are listed below.";
+                    : $"Only {Duration(sleep.BatterySleepTime)} of sleep on battery (sessions of 30 minutes or more): too little to judge, " +
+                      $"at least {Duration(SleepStudy.MinimumJudgedSleep)} is needed. Sessions are listed for reference; the Recent use card has the battery report's sleep figure.";
         }
 
         EnergyFindings.Clear();
