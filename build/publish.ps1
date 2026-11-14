@@ -24,7 +24,9 @@ $props = [xml](Get-Content (Join-Path $root "Directory.Build.props"))
 $version = ($props.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
 $dist = Join-Path $root "dist\Unveil-$version"
 
-if (Test-Path $dist) { Remove-Item $dist -Recurse -Force }
+# Keep only the release being built: older versions are on GitHub if they are ever needed.
+Get-ChildItem (Join-Path $root "dist") -Directory -Filter "Unveil-*" -ErrorAction SilentlyContinue |
+    ForEach-Object { Write-Host "Removing old release $($_.Name)"; Remove-Item $_.FullName -Recurse -Force }
 New-Item -ItemType Directory -Force $dist | Out-Null
 
 foreach ($rid in "win-x64", "win-arm64") {

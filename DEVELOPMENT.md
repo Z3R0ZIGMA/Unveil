@@ -18,7 +18,8 @@ of the app.
 ```
 powershell -ExecutionPolicy Bypass -File build\publish.ps1
 ```
-This builds `dist\Unveil-<version>\`:
+This builds `dist\Unveil-<version>\` and deletes older `dist\Unveil-*` folders (past versions stay on the GitHub
+releases page):
 - `win-x64\` and `win-arm64\`, each with `Unveil.exe` and a `README.txt` (for a USB stick)
 - `github\`, exactly what goes on the GitHub release: `Unveil.exe` (x64), `Unveil-arm64.exe` and `SHA256SUMS.txt`
 
