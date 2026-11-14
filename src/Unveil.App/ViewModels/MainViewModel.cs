@@ -83,6 +83,15 @@ public sealed partial class MainViewModel : ObservableObject
 
     public ICommand ExportCommand { get; }
 
+    // ------------------------------------------------------------ app
+
+    /// <summary>e.g. "0.8.2", from Directory.Build.props.</summary>
+    /// <remarks>Instance properties: WPF bindings by name do not see static properties.</remarks>
+    public string AppVersion { get; } = typeof(ReportDocument).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+
+    /// <summary>Window title, e.g. "Unveil 0.8.2", so the tech can see which build is running.</summary>
+    public string AppTitle => $"Unveil {AppVersion}";
+
     // ------------------------------------------------------------ state
 
     public ReportDocument? Report { get => _report; private set { if (Set(ref _report, value)) { OnPropertyChanged(nameof(HasReport)); } } }

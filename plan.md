@@ -4,7 +4,7 @@
 
 ## Changes since the plan (decided during the build)
 
-**Status (version 0.8.1):** all eight phases are done. Code signing is deferred.
+**Status (version 0.8.2):** all eight phases are done. Code signing is deferred.
 
 - **Who uses it:** a technician runs `Unveil.exe` on the client's laptop. There is no RMM or command-line use.
 - **Removed:** CLI mode (section 7, the `--cli` switch, exit codes, `Unveil.Cli.exe`) and report branding (company

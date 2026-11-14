@@ -7,7 +7,7 @@
         xmlns:c="clr-namespace:Unveil.App.Controls"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
-        Title="Unveil" Icon="unveil.ico"
+        Title="{Binding AppTitle, FallbackValue=Unveil}" Icon="unveil.ico"
         Style="{StaticResource UnveilWindow}"
         Width="1200" Height="880" MinWidth="980" MinHeight="600"
         WindowStartupLocation="Manual">
@@ -25,7 +25,11 @@
                     </Grid.ColumnDefinitions>
                     <Image Source="unveil.png" Width="40" Height="40" VerticalAlignment="Center" RenderOptions.BitmapScalingMode="HighQuality" />
                     <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="Unveil" Style="{StaticResource TitleText}" FontSize="22" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Unveil" Style="{StaticResource TitleText}" FontSize="22" />
+                            <TextBlock Text="{Binding AppVersion}" Style="{StaticResource MutedText}" FontSize="14"
+                                       VerticalAlignment="Bottom" Margin="8,0,0,4" ToolTip="Unveil version" />
+                        </StackPanel>
                         <TextBlock Text="See what's really draining your battery." Style="{StaticResource MutedText}" />
                     </StackPanel>
                     <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">

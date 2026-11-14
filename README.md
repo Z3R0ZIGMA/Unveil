@@ -4,7 +4,7 @@
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
 battery is worn out or something on the laptop is draining it.
 
-**Version 0.8.1.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
+**Version 0.8.2.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
 
 - [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
