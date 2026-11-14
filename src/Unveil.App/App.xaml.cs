@@ -5,6 +5,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Unveil.App.ViewModels;
 using Unveil.Core.Battery;
+using Unveil.Core.Power;
 
 namespace Unveil.App;
 
@@ -19,7 +20,11 @@ public partial class App : Application
         ILiveBatterySource live = e.Args.Contains("--simulate-discharge", StringComparer.OrdinalIgnoreCase)
             ? new SimulatedDischarge(new WmiLiveBatteryReader())
             : new WmiLiveBatteryReader();
-        var viewModel = new MainViewModel(() => BatteryCollector.CreateDefault().Collect(), live, window);
+        var viewModel = new MainViewModel(
+            () => BatteryCollector.CreateDefault().Collect(),
+            live,
+            window,
+            () => new DrainTest(live, new PerfCounterActivitySource()));
         window.DataContext = viewModel;
         MainWindow = window;
 
@@ -30,8 +35,15 @@ public partial class App : Application
             window.WindowStartupLocation = WindowStartupLocation.Manual;
             window.Left = -20000;
             window.ShowActivated = false;
+            var testSeconds = TestSeconds(e.Args);
             viewModel.ReportLoaded += async (_, _) =>
             {
+                // Developer aid: `--test-seconds N` runs a short full test (without waiting for unplug) before the screenshot.
+                if (testSeconds is { } seconds)
+                {
+                    await viewModel.RunTestAsync(skipUnplug: true, TimeSpan.FromSeconds(seconds));
+                }
+
                 // Let live readings and layout settle (longer when simulating, so the sparkline has points).
                 var simulating = e.Args.Contains("--simulate-discharge", StringComparer.OrdinalIgnoreCase);
                 await Task.Delay(TimeSpan.FromSeconds(simulating ? 16 : 2.5));
@@ -65,6 +77,12 @@ public partial class App : Application
                 DischargeRateMilliwatts = (int)(watts * 1000),
             };
         }
+    }
+
+    private static int? TestSeconds(string[] args)
+    {
+        var i = Array.FindIndex(args, a => string.Equals(a, "--test-seconds", StringComparison.OrdinalIgnoreCase));
+        return i >= 0 && i + 1 < args.Length && int.TryParse(args[i + 1], out var s) ? s : null;
     }
 
     private static string? ScreenshotPath(string[] args)

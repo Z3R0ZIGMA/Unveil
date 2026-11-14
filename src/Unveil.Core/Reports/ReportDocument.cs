@@ -1,5 +1,6 @@
 using System.Reflection;
 using Unveil.Core.Battery;
+using Unveil.Core.Power;
 using Unveil.Core.Verdict;
 
 namespace Unveil.Core.Reports;
@@ -23,21 +24,33 @@ public sealed record ReportDocument
 
     public UsageSummary Usage { get; init; } = new();
 
-    /// <summary>Null until the live drain test (Phase 4) is run.</summary>
+    /// <summary>Null until the live drain test is run.</summary>
     public DrainMeasurement? Drain { get; init; }
+
+    /// <summary>Per-app activity from the drain test; null until it is run.</summary>
+    public ActivityResult? Activity { get; init; }
+
+    /// <summary>Which drain thresholds were used, e.g. "Thin and light laptop".</summary>
+    public string? DrainProfile { get; init; }
 
     public static ReportDocument Create(
         BatterySnapshot snapshot,
-        DrainMeasurement? drain = null,
+        DrainTestResult? test = null,
         VerdictSettings? settings = null,
-        DateTimeOffset? generatedAt = null) => new()
+        DateTimeOffset? generatedAt = null)
+    {
+        settings ??= VerdictSettings.Default;
+        return new ReportDocument
         {
             GeneratedAt = generatedAt ?? DateTimeOffset.Now,
             Snapshot = snapshot,
-            Verdict = VerdictEngine.Evaluate(snapshot, drain, settings),
+            Verdict = VerdictEngine.Evaluate(snapshot, test?.Measurement, settings),
             Usage = UsageAnalyzer.Summarize(snapshot.Report),
-            Drain = drain,
+            Drain = test?.Measurement,
+            Activity = test?.Activity,
+            DrainProfile = test is null ? null : settings.DrainProfileName,
         };
+    }
 
     public static string DefaultGenerator { get; } =
         $"Unveil {typeof(ReportDocument).Assembly.GetName().Version?.ToString(3) ?? "0.0.0"}";

@@ -302,3 +302,87 @@ public class VerdictEngineTests
         Assert.Contains(v.Evidence, f => f.Text.Contains("3 h 17 m"));
     }
 }
+
+public class VerdictEngineDrainTests
+{
+    private static DrainMeasurement Drain(double? watts, bool pluggedIn = false, params AppImpact[] apps) => new()
+    {
+        AverageWatts = watts,
+        Duration = TimeSpan.FromSeconds(60),
+        SampleCount = watts is null ? 0 : 30,
+        PluggedIn = pluggedIn,
+        TopApps = apps,
+    };
+
+    [Fact]
+    public void Plugged_in_test_has_no_watts_and_stays_healthy_when_apps_are_quiet()
+    {
+        var v = VerdictEngine.Evaluate(TestData.Snapshot(TestData.WithHealth(90)), Drain(null, pluggedIn: true, new AppImpact("Notepad", 40, Impact: 0.3)));
+
+        Assert.Equal(VerdictKind.Healthy, v.Kind);
+        Assert.Equal(DrainStatus.Normal, v.Drain);
+        Assert.Contains(v.Evidence, f => f.Text.Contains("charger stayed connected"));
+    }
+
+    [Fact]
+    public void A_big_share_of_a_nearly_idle_machine_is_not_a_problem()
+    {
+        var v = VerdictEngine.Evaluate(TestData.Snapshot(TestData.WithHealth(90)), Drain(5, false, new AppImpact("svchost", 60, Impact: 0.4)));
+
+        Assert.Equal(VerdictKind.Healthy, v.Kind);
+    }
+
+    [Fact]
+    public void A_busy_dominant_app_makes_drain_elevated_even_when_plugged_in()
+    {
+        var v = VerdictEngine.Evaluate(TestData.Snapshot(TestData.WithHealth(90)), Drain(null, true, new AppImpact("Teams", 45, Impact: 6)));
+
+        Assert.Equal(VerdictKind.SoftwareDrain, v.Kind);
+        Assert.Contains("Teams (45% of power)", v.Message);
+    }
+
+    [Fact]
+    public void Known_offender_advice_becomes_an_action()
+    {
+        var update = new AppImpact("Windows Update", 12, Impact: 2, Category: "Windows Update", Advice: "Let it finish while plugged in.");
+        var v = VerdictEngine.Evaluate(TestData.Snapshot(TestData.WithHealth(90)), Drain(6, false, update));
+
+        Assert.Contains(v.Actions, a => a.Contains("Let it finish while plugged in."));
+        Assert.Contains(v.Evidence, f => f.Severity == Severity.Warning && f.Text.Contains("(Windows Update)"));
+    }
+
+    [Fact]
+    public void Laptop_type_changes_the_drain_limits()
+    {
+        var snapshot = TestData.Snapshot(TestData.WithHealth(90));
+        var drain = Drain(14);
+
+        var thin = VerdictEngine.Evaluate(snapshot, drain, VerdictSettings.Default.For(MachineClass.ThinAndLight));
+        var gaming = VerdictEngine.Evaluate(snapshot, drain, VerdictSettings.Default.For(MachineClass.Performance));
+
+        Assert.Equal(DrainStatus.Elevated, thin.Drain);
+        Assert.Equal(DrainStatus.Normal, gaming.Drain);
+        Assert.Contains(gaming.Evidence, f => f.Text.Contains("gaming or workstation laptop, normal is below 20 W"));
+    }
+
+    [Theory]
+    [InlineData(MachineClass.ThinAndLight, 8, 15)]
+    [InlineData(MachineClass.Standard, 12, 20)]
+    [InlineData(MachineClass.Performance, 20, 35)]
+    public void Machine_class_thresholds(MachineClass c, double elevated, double high)
+    {
+        var s = VerdictSettings.Default.For(c);
+
+        Assert.Equal(elevated, s.ElevatedDrainWatts);
+        Assert.Equal(high, s.HighDrainWatts);
+    }
+
+    [Fact]
+    public void Top_apps_are_listed_in_the_evidence()
+    {
+        var v = VerdictEngine.Evaluate(TestData.Snapshot(TestData.WithHealth(90)),
+            Drain(6, false, new AppImpact("A", 20, 1), new AppImpact("B", 10, 0.5), new AppImpact("C", 5, 0.2), new AppImpact("D", 1, 0.1)));
+
+        Assert.Contains(v.Evidence, f => f.Text == "Apps using the most power during the test: A (20%), B (10%), C (5%).");
+    }
+}

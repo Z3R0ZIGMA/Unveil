@@ -140,28 +140,61 @@ public static class VerdictEngine
             return new DrainAssessment(DrainStatus.NotTested, null, null);
         }
 
-        var watts = drain.AverageWatts;
-        var status = watts > settings.HighDrainWatts ? DrainStatus.High
-            : watts >= settings.ElevatedDrainWatts ? DrainStatus.Elevated
-            : DrainStatus.Normal;
+        var status = DrainStatus.Normal;
+        string? cause = null;
 
-        evidence.Add(new Finding(
-            status switch { DrainStatus.Normal => Severity.Good, DrainStatus.Elevated => Severity.Warning, _ => Severity.Danger },
-            $"Average power draw on battery was {Watts(watts)} over {Duration(drain.Duration)} " +
-            $"(normal is below {Watts(settings.ElevatedDrainWatts, "0")})."));
+        if (drain.AverageWatts is { } watts)
+        {
+            status = watts > settings.HighDrainWatts ? DrainStatus.High
+                : watts >= settings.ElevatedDrainWatts ? DrainStatus.Elevated
+                : DrainStatus.Normal;
 
-        string? cause = status == DrainStatus.Normal ? null : $"power draw of {Watts(watts)}";
+            evidence.Add(new Finding(
+                status switch { DrainStatus.Normal => Severity.Good, DrainStatus.Elevated => Severity.Warning, _ => Severity.Danger },
+                $"Average power draw on battery was {Watts(watts)} over {Duration(drain.Duration)} " +
+                $"(for a {Lower(settings.DrainProfileName)}, normal is below {Watts(settings.ElevatedDrainWatts, "0")})."));
 
-        var dominant = drain.TopApps.Where(a => a.SharePercent > settings.DominantAppSharePercent).ToList();
+            if (drain.PluggedIn)
+            {
+                evidence.Add(new Finding(Severity.Neutral, "The charger was connected for part of the test, so those readings were left out."));
+            }
+
+            cause = status == DrainStatus.Normal ? null : $"a power draw of {Watts(watts)}";
+        }
+        else
+        {
+            evidence.Add(new Finding(Severity.Neutral,
+                "The charger stayed connected during the test, so the power draw could not be measured; only app activity was checked."));
+        }
+
+        if (drain.TopApps.Count > 0)
+        {
+            evidence.Add(new Finding(Severity.Neutral,
+                "Apps using the most power during the test: " +
+                string.Join(", ", drain.TopApps.Take(3).Select(a => $"{a.Name} ({Percent(a.SharePercent, "0")})")) + "."));
+        }
+
+        // One app taking a large share while the laptop sat idle. Ignored when the whole machine was nearly idle.
+        var dominant = drain.TopApps
+            .Where(a => a.SharePercent > settings.DominantAppSharePercent && a.Impact >= settings.DominantAppMinimumImpact)
+            .ToList();
         foreach (var app in dominant)
         {
-            evidence.Add(new Finding(Severity.Warning, $"{app.Name} used {Percent(app.SharePercent, "0")} of the power during the test."));
+            evidence.Add(new Finding(Severity.Warning,
+                $"{app.Name}{(app.Category is null ? "" : $" ({app.Category})")} used {Percent(app.SharePercent, "0")} of the power while the laptop was idle."));
+        }
+
+        // Known battery-draining apps that were noticeably active, even if not dominant.
+        foreach (var app in drain.TopApps.Where(a => a.Category is not null && !dominant.Contains(a) && a.SharePercent >= 5 && a.Impact >= 0.5))
+        {
+            evidence.Add(new Finding(Severity.Warning, $"{app.Name} ({app.Category}) used {Percent(app.SharePercent, "0")} of the power."));
         }
 
         if (dominant.Count > 0)
         {
             status = status == DrainStatus.Normal ? DrainStatus.Elevated : status;
-            cause = string.Join(", ", dominant.Select(a => $"{a.Name} ({Percent(a.SharePercent, "0")} of power)"));
+            var apps = string.Join(", ", dominant.Select(a => $"{a.Name} ({Percent(a.SharePercent, "0")} of power)"));
+            cause = cause is null ? apps : $"{cause}, mostly from {apps}";
         }
 
         return new DrainAssessment(status, drain, cause);
@@ -295,16 +328,25 @@ public static class VerdictEngine
             actions.Add("The battery does not report enough data to measure its health; compare the runtime with what the customer expects.");
         }
 
-        if (drainBad && drain.Measurement is { } m)
+        if (drain.Measurement is { } m)
         {
-            var apps = m.TopApps.Where(a => a.SharePercent >= 10).Take(5).ToList();
-            if (apps.Count > 0)
+            // Advice for known offenders that were active, whatever the verdict.
+            foreach (var app in m.TopApps.Where(a => a.Advice is not null && a.SharePercent >= 5 && a.Impact >= 0.5).Take(3))
             {
-                actions.AddRange(apps.Select(a => $"Check {a.Name}: it used {Percent(a.SharePercent, "0")} of the power during the test."));
+                actions.Add($"{app.Name} used {Percent(app.SharePercent, "0")} of the power: {app.Advice}");
             }
-            else
+
+            if (drainBad)
             {
-                actions.Add($"Check background apps and power settings: the draw was {Watts(m.AverageWatts)} (normal is below {Watts(settings.ElevatedDrainWatts, "0")}).");
+                var apps = m.TopApps.Where(a => a.Advice is null && a.SharePercent >= 10).Take(5).ToList();
+                if (apps.Count > 0)
+                {
+                    actions.AddRange(apps.Select(a => $"Check {a.Name}: it used {Percent(a.SharePercent, "0")} of the power during the test."));
+                }
+                else if (!actions.Any(a => a.Contains("of the power", StringComparison.Ordinal)))
+                {
+                    actions.Add($"Check background apps and power settings: the draw was {Watts(m.AverageWatts)} (normal is below {Watts(settings.ElevatedDrainWatts, "0")}).");
+                }
             }
         }
         else if (drain.Status == DrainStatus.NotTested)

@@ -3,7 +3,7 @@
 
 Portable Windows tool that diagnoses laptop battery health and power-hungry apps.
 
-See [plan.md](plan.md) for the full spec. **Current status: Phase 3** (desktop app: dashboard, health gauge, live card, capacity history chart; plus the console tool).
+See [plan.md](plan.md) for the full spec. **Current status: Phase 4** (desktop app with the guided 60-second drain test and the apps using the most power; plus the console tool).
 
 ## Requirements
 - Windows 10 22H2 or Windows 11 (x64 or ARM64)
@@ -26,8 +26,11 @@ dotnet publish src/Unveil.App -c Release -r win-x64 -o publish/app-win-x64
 dotnet publish src/Unveil.App -c Release -r win-arm64 -o publish/app-win-arm64
 ```
 
+**Run full test:** click it, unplug the charger (or choose "Test while plugged in"), then leave the laptop idle for 60 seconds.
+Unveil measures the power draw every 2 s and which apps used the most power, then updates the verdict.
+
 Developer aids: `Unveil.exe --screenshot <file.png>` renders the dashboard to an image and exits;
-`--simulate-discharge` pretends the laptop is unplugged (7-10 W) to check the on-battery layout.
+`--simulate-discharge` pretends the laptop is unplugged (7-10 W); `--test-seconds N` runs a short full test before the screenshot.
 
 ## Run the console tool
 ```
@@ -46,6 +49,8 @@ Options (when run from a command prompt):
 
 | Option | Purpose |
 |---|---|
+| `--sample [seconds]` | Run the drain test (default 60 s): power draw on battery plus the apps using the most power |
+| `--class thin\|standard\|performance` | Laptop type for the drain limits (8/15, 12/20 or 20/35 W) |
 | `--out <folder>` | Write the report to this folder (JSON and HTML unless one is chosen) |
 | `--json` / `--html` | Write only that format |
 | `--open` | Open the HTML report when done |
@@ -61,6 +66,7 @@ src/Unveil.Core/          data collection, parsing, verdict and reports (no UI)
   Battery/                WMI reader, battery report parser, merge, health, usage summary
   SystemInfo/             laptop make/model/serial
   Verdict/                verdict engine and capacity trend check
+  Power/                  drain test, process sampler, Power Impact scoring, known offenders
   Reports/                JSON export, HTML report, copy-to-ticket summary
 src/Unveil.App/           WPF desktop app (MVVM): Themes/Theme.xaml, Controls/ (gauge, chart, sparkline)
 src/Unveil.Cli/           console front end

@@ -188,3 +188,70 @@ public class ReportTests
         Assert.Contains("<h1>Inconclusive</h1>", html);
     }
 }
+
+public class ReportWithDrainTestTests
+{
+    private static Unveil.Core.Power.DrainTestResult Test()
+    {
+        var apps = new[]
+        {
+            new Unveil.Core.Power.AppUsage
+            {
+                Name = "TiWorker", DisplayName = "Windows Modules Installer Worker", ProcessCount = 1, CpuPercent = 12, SharePercent = 70, Impact = 7.2,
+                Offender = Unveil.Core.Power.KnownOffenders.Match("TiWorker", 1),
+            },
+            new Unveil.Core.Power.AppUsage { Name = "chrome", DisplayName = "Google Chrome", ProcessCount = 12, CpuPercent = 3, SharePercent = 30, Impact = 1.8 },
+        };
+        return new Unveil.Core.Power.DrainTestResult
+        {
+            Activity = new Unveil.Core.Power.ActivityResult { Duration = TimeSpan.FromSeconds(60), SnapshotCount = 31, GpuMeasured = true, Apps = apps },
+            Measurement = new DrainMeasurement
+            {
+                AverageWatts = 11.2, MinWatts = 9.8, MaxWatts = 13.1, Duration = TimeSpan.FromSeconds(60), SampleCount = 30,
+                TopApps = [new AppImpact("Windows Modules Installer Worker", 70, 7.2, "Windows Update", "Let it finish."), new AppImpact("Google Chrome", 30, 1.8)],
+            },
+        };
+    }
+
+    [Fact]
+    public void Report_includes_the_test_and_scores_with_the_chosen_laptop_type()
+    {
+        var doc = ReportDocument.Create(Snapshot(WithHealth(90)), Test(), VerdictSettings.Default.For(MachineClass.Standard), Now);
+
+        Assert.Equal("Standard laptop", doc.DrainProfile);
+        Assert.Equal(VerdictKind.SoftwareDrain, doc.Verdict.Kind);
+        Assert.NotNull(doc.Activity);
+    }
+
+    [Fact]
+    public void Html_lists_the_apps_with_offender_labels()
+    {
+        var html = HtmlReportWriter.Render(ReportDocument.Create(Snapshot(WithHealth(90)), Test(), null, Now));
+
+        Assert.Contains("Apps using the most power", html);
+        Assert.Contains("Windows Modules Installer Worker", html);
+        Assert.Contains("Google Chrome <span class=\"muted\">(12 processes)</span>", html);
+        Assert.Contains(">Windows Update</div>", html);
+        Assert.Contains("11.2 W average over 1 m (30 readings, 9.8 W to 13.1 W)", html);
+    }
+
+    [Fact]
+    public void Summary_mentions_the_drain_test_and_stays_within_eight_lines()
+    {
+        var text = TextSummary.Create(ReportDocument.Create(Snapshot(WithHealth(90)), Test(), null, Now));
+
+        Assert.Contains("Drain test: 11.2 W average over 1 m; top apps: Windows Modules Installer Worker 70%, Google Chrome 30%", text);
+        Assert.InRange(text.Split('\n').Length, 5, 8);
+    }
+
+    [Fact]
+    public void Json_round_trips_the_drain_test()
+    {
+        var doc = ReportDocument.Create(Snapshot(WithHealth(90)), Test(), null, Now);
+        var back = JsonReportWriter.Read(JsonReportWriter.Serialize(doc));
+
+        Assert.Equal(11.2, back.Drain!.AverageWatts);
+        Assert.Equal(2, back.Activity!.Apps.Count);
+        Assert.Equal("Windows Update", back.Activity.Apps[0].Offender?.Category);
+    }
+}

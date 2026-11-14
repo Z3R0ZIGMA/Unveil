@@ -29,7 +29,7 @@ public sealed record DetailSection(string Title, IReadOnlyList<DetailRow> Rows);
 
 public sealed record HistoryRow(string Date, string FullCharge, string Design, string Health, string Cycles);
 
-public sealed class MainViewModel : ObservableObject
+public sealed partial class MainViewModel : ObservableObject
 {
     private const int LiveHistoryLength = 60;      // 2 minutes at one reading per 2 s
     private const int LiveAverageSamples = 15;     // smooth runtime estimates over 30 s
@@ -41,13 +41,14 @@ public sealed class MainViewModel : ObservableObject
     private readonly List<double> _recentWatts = [];
     private bool _liveReading;
 
-    public MainViewModel(Func<BatterySnapshot> collect, ILiveBatterySource live, IUiServices ui)
+    public MainViewModel(Func<BatterySnapshot> collect, ILiveBatterySource live, IUiServices ui, Func<Unveil.Core.Power.DrainTest>? createTest = null)
     {
         _collect = collect;
         _live = live;
         _ui = ui;
+        InitTest(createTest ?? Unveil.Core.Power.DrainTest.CreateDefault);
 
-        RefreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy);
+        RefreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy && Stage == TestStage.Idle);
         CopySummaryCommand = new RelayCommand(CopySummary, () => Report is not null);
         ExportCommand = new RelayCommand(Export, () => Report is not null);
 
@@ -210,7 +211,9 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             var snapshot = await Task.Run(_collect);
-            var report = ReportDocument.Create(snapshot);
+            _snapshot = snapshot;
+            _lastTest = null; // a fresh check makes the old test results stale
+            var report = ReportDocument.Create(snapshot, null, Settings);
             Apply(report);
             StatusText = $"Checked {report.GeneratedAt.ToString("HH:mm", Inv)} as {(snapshot.IsAdministrator ? "administrator" : "standard user")}";
             await ReadLiveAsync();
@@ -343,6 +346,7 @@ public sealed class MainViewModel : ObservableObject
             Percent(e.Health.HealthPercent),
             e.CycleCount is > 0 ? Number(e.CycleCount) : "-")).ToList();
 
+        ApplyActivity(report);
         Details = BuildDetails(s);
         Notes = s.Log.Count == 0
             ? ["All sources were read without problems."]
@@ -417,7 +421,7 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task ReadLiveAsync()
     {
-        if (_liveReading || Report is null || !Report.Snapshot.HasBattery)
+        if (_liveReading || Report is null || !Report.Snapshot.HasBattery || Stage == TestStage.Measuring)
         {
             return;
         }

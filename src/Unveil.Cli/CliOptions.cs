@@ -1,3 +1,5 @@
+using Unveil.Core.Verdict;
+
 namespace Unveil.Cli;
 
 internal sealed record CliOptions
@@ -19,6 +21,11 @@ internal sealed record CliOptions
 
     /// <summary>Open the HTML report in the default browser afterwards.</summary>
     public bool Open { get; init; }
+
+    /// <summary>Run the live drain test for this many seconds (null = do not run it).</summary>
+    public int? SampleSeconds { get; init; }
+
+    public MachineClass MachineClass { get; init; } = MachineClass.ThinAndLight;
 
     public string? Error { get; init; }
 
@@ -46,6 +53,42 @@ internal sealed record CliOptions
                     break;
                 case "--open":
                     options = options with { Open = true };
+                    break;
+                case "--sample":
+                    // Optional number of seconds; plan.md uses "--sample 60".
+                    var seconds = 60;
+                    if (i + 1 < args.Length && int.TryParse(args[i + 1], out var parsed))
+                    {
+                        seconds = parsed;
+                        i++;
+                    }
+
+                    if (seconds is < 10 or > 600)
+                    {
+                        return options with { Error = "--sample must be between 10 and 600 seconds" };
+                    }
+
+                    options = options with { SampleSeconds = seconds };
+                    break;
+                case "--class":
+                    if (!TryValue(args, ref i, out var cls))
+                    {
+                        return options with { Error = "--class needs thin, standard or performance" };
+                    }
+
+                    MachineClass? machineClass = cls.ToLowerInvariant() switch
+                    {
+                        "thin" or "thinandlight" or "ultrabook" => MachineClass.ThinAndLight,
+                        "standard" => MachineClass.Standard,
+                        "performance" or "gaming" or "workstation" => MachineClass.Performance,
+                        _ => null,
+                    };
+                    if (machineClass is null)
+                    {
+                        return options with { Error = $"Unknown --class '{cls}'. Use thin, standard or performance." };
+                    }
+
+                    options = options with { MachineClass = machineClass.Value };
                     break;
                 case "--out":
                     if (!TryValue(args, ref i, out var outFolder))
@@ -107,10 +150,15 @@ internal sealed record CliOptions
             Unveil.Cli - laptop battery check (test build)
 
             Usage:
-              Unveil.Cli.exe [--out <folder>] [--json] [--html] [--open]
+              Unveil.Cli.exe [--sample [seconds]] [--class thin|standard|performance]
+                             [--out <folder>] [--json] [--html] [--open]
                              [--save-report <folder>] [--skip-wmi] [--skip-report]
 
             Options:
+              --sample [seconds]      Run the live drain test (default 60 s): measures the power draw on
+                                      battery and which apps use the most power. Leave the laptop idle.
+              --class <type>          Laptop type for the drain limits: thin (default, 8/15 W),
+                                      standard (12/20 W) or performance (20/35 W).
               --out <folder>          Write the report to this folder (JSON and HTML unless one is chosen).
               --json                  Write the JSON report (all collected data + verdict).
               --html                  Write the HTML report for the customer.

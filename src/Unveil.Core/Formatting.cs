@@ -30,7 +30,12 @@ public static class Formatting
             return $"{(int)t.TotalDays} d {t.Hours} h";
         }
 
-        return t.TotalHours >= 1 ? $"{(int)t.TotalHours} h {t.Minutes} m" : $"{Math.Max(0, t.Minutes)} m";
+        if (t.TotalHours >= 1)
+        {
+            return $"{(int)t.TotalHours} h {t.Minutes} m";
+        }
+
+        return t.TotalMinutes >= 1 ? $"{t.Minutes} m" : $"{Math.Max(0, (int)Math.Round(t.TotalSeconds))} s";
     }
 
     public static string Date(DateTimeOffset? date) => date?.ToLocalTime().ToString("yyyy-MM-dd", Inv) ?? "-";

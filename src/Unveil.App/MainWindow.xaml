@@ -44,11 +44,84 @@
                                 ToolTip="Copy a short plain-text summary for a ticket" />
                         <Button Content="Export report" Command="{Binding ExportCommand}" Margin="0,0,8,0"
                                 ToolTip="Save the HTML report for the customer (and the JSON data)" />
-                        <Button Content="Check again" Command="{Binding RefreshCommand}" Style="{StaticResource PrimaryButton}"
+                        <Button Content="Check again" Command="{Binding RefreshCommand}" Margin="0,0,8,0"
                                 ToolTip="Collect the battery data again" />
+                        <Button Content="Run full test" Command="{Binding RunTestCommand}" Style="{StaticResource PrimaryButton}"
+                                ToolTip="Unplug, then measure the power draw and the apps using the most power for 60 seconds" />
                     </StackPanel>
                     <TextBlock Text="{Binding StatusText}" Style="{StaticResource MutedText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </DockPanel>
+
+
+                <!-- ============================================ full test panel -->
+                <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Accent}" BorderThickness="1"
+                        CornerRadius="{StaticResource Radius}" Padding="22,18" Margin="0,0,0,14"
+                        Visibility="{Binding IsTestActive, Converter={StaticResource BoolToVis}}">
+                    <StackPanel>
+                        <!-- Step 1: unplug -->
+                        <Grid Visibility="{Binding IsWaitingForUnplug, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Width="44" Height="44" VerticalAlignment="Top" Margin="0,0,16,0">
+                                <Ellipse Fill="{StaticResource Accent}" />
+                                <TextBlock Style="{StaticResource IconText}" FontSize="20" Foreground="{StaticResource SelectionText}" Text="&#xE945;" />
+                            </Grid>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="STEP 1 OF 2" Style="{StaticResource CapsLabel}" />
+                                <TextBlock Text="Unplug the charger" Style="{StaticResource TitleText}" FontSize="20" />
+                                <TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,12"
+                                           Text="The test measures the power draw on battery, so unplug the charger. It starts by itself as soon as the laptop is on battery." />
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Laptop type" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    <ComboBox Width="250" ItemsSource="{Binding MachineClassOptions}" DisplayMemberPath="Name"
+                                              SelectedValuePath="Value" SelectedValue="{Binding SelectedMachineClass}"
+                                              ToolTip="Sets what counts as a normal power draw" />
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="16,0,0,0">
+                                <Button Content="Test while plugged in" Command="{Binding SkipUnplugCommand}" Margin="0,0,0,8"
+                                        ToolTip="Measure app activity only; the power draw can't be measured on AC" />
+                                <Button Content="Cancel" Command="{Binding CancelTestCommand}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Getting ready -->
+                        <StackPanel Visibility="{Binding IsPreparing, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="STEP 2 OF 2" Style="{StaticResource CapsLabel}" />
+                            <TextBlock Text="Getting ready..." Style="{StaticResource TitleText}" FontSize="20" />
+                            <TextBlock Style="{StaticResource MutedText}" Text="Preparing the process counters. This can take a few seconds the first time." />
+                        </StackPanel>
+
+                        <!-- Step 2: measuring -->
+                        <Grid Visibility="{Binding IsMeasuring, Converter={StaticResource BoolToVis}}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="260" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Margin="0,0,24,0">
+                                <TextBlock Text="STEP 2 OF 2" Style="{StaticResource CapsLabel}" />
+                                <TextBlock Text="Measuring power draw" Style="{StaticResource TitleText}" FontSize="20" />
+                                <TextBlock Style="{StaticResource BodyText}" Margin="0,4,0,12"
+                                           Text="Leave the laptop idle: don't type, move the mouse or open apps until the test finishes." />
+                                <ProgressBar Value="{Binding TestProgress, Mode=OneWay}" Maximum="100" Margin="0,0,0,6" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Cancel" Command="{Binding CancelTestCommand}" Padding="12,4" />
+                                    <TextBlock Text="{Binding TestTimeLeft}" Style="{StaticResource MutedText}" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="POWER DRAW NOW" Style="{StaticResource CapsLabel}" />
+                                <TextBlock Text="{Binding TestWattsText}" Style="{StaticResource BigNumber}" FontSize="30" />
+                                <c:Sparkline Values="{Binding TestWattHistory}" Capacity="30" Height="40" Margin="0,2,0,4"
+                                             LineBrush="{StaticResource Accent}" BaselineBrush="{StaticResource Border}" />
+                                <TextBlock Text="{Binding TestAverageText}" Style="{StaticResource MutedText}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
 
                 <!-- ============================================ loading -->
                 <Border Style="{StaticResource Card}" Visibility="{Binding ShowLoading, Converter={StaticResource BoolToVis}}" Padding="24">
@@ -217,6 +290,134 @@
                             </StackPanel>
                         </Border>
                     </Grid>
+
+
+                    <!-- ============================================ power hogs -->
+                    <Border Style="{StaticResource Card}" Visibility="{Binding HasBattery, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top"
+                                            Visibility="{Binding HasActivity, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="Laptop type" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                    <ComboBox Width="250" ItemsSource="{Binding MachineClassOptions}" DisplayMemberPath="Name"
+                                              SelectedValuePath="Value" SelectedValue="{Binding SelectedMachineClass}"
+                                              ToolTip="Sets what counts as a normal power draw; the verdict updates straight away" />
+                                </StackPanel>
+                                <TextBlock Text="Apps using the most power" Style="{StaticResource HeadingText}" />
+                            </DockPanel>
+                            <TabControl>
+                                <TabItem Header="Live test">
+                                    <StackPanel>
+                                        <!-- Before the test -->
+                                        <DockPanel Visibility="{Binding HasActivity, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+                                            <Button DockPanel.Dock="Right" Content="Run full test" Command="{Binding RunTestCommand}"
+                                                    Style="{StaticResource PrimaryButton}" VerticalAlignment="Center" />
+                                            <TextBlock Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0"
+                                                       Text="Run the full test to see which apps use the most power. It takes about a minute: unplug the charger and leave the laptop idle." />
+                                        </DockPanel>
+
+                                        <!-- After the test -->
+                                        <StackPanel Visibility="{Binding HasActivity, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding ActivitySummary}" Style="{StaticResource MutedText}" Margin="0,0,0,10" />
+                                            <Grid Margin="8,0,8,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="28" />
+                                                    <ColumnDefinition Width="3*" />
+                                                    <ColumnDefinition Width="2*" />
+                                                    <ColumnDefinition Width="70" />
+                                                    <ColumnDefinition Width="70" />
+                                                    <ColumnDefinition Width="110" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="1" Text="App" Style="{StaticResource MutedText}" />
+                                                <TextBlock Grid.Column="2" Text="Share of power" Style="{StaticResource MutedText}" />
+                                                <TextBlock Grid.Column="3" Text="CPU" Style="{StaticResource MutedText}" HorizontalAlignment="Right" />
+                                                <TextBlock Grid.Column="4" Text="GPU" Style="{StaticResource MutedText}" HorizontalAlignment="Right" />
+                                                <TextBlock Grid.Column="5" Text="Disk + network" Style="{StaticResource MutedText}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Border BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" />
+                                            <ItemsControl ItemsSource="{Binding Apps}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate DataType="{x:Type vm:AppRow}">
+                                                        <StackPanel>
+                                                            <Button Style="{StaticResource RowButton}" Command="{Binding ToggleCommand}"
+                                                                    ToolTip="{Binding Advice}">
+                                                                <Grid>
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="28" />
+                                                                        <ColumnDefinition Width="3*" />
+                                                                        <ColumnDefinition Width="2*" />
+                                                                        <ColumnDefinition Width="70" />
+                                                                        <ColumnDefinition Width="70" />
+                                                                        <ColumnDefinition Width="110" />
+                                                                    </Grid.ColumnDefinitions>
+                                                                    <TextBlock x:Name="Chevron" Style="{StaticResource IconText}" FontSize="10" Text="&#xE76C;"
+                                                                               Foreground="{StaticResource Muted}" HorizontalAlignment="Left" />
+                                                                    <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                                                        <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                                                                        <StackPanel Orientation="Horizontal">
+                                                                            <TextBlock Text="{Binding ProcessCountText}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,0,10,0"
+                                                                                       Visibility="{Binding ProcessCountText, Converter={StaticResource NullToCollapsed}}" />
+                                                                            <StackPanel Orientation="Horizontal" Visibility="{Binding Category, Converter={StaticResource NullToCollapsed}}">
+                                                                                <Grid Width="14" Height="14" Margin="0,0,5,0">
+                                                                                    <Ellipse Fill="{StaticResource Warning}" />
+                                                                                    <TextBlock Style="{StaticResource IconText}" FontSize="8" Foreground="{StaticResource Window}" Text="&#xE7BA;" />
+                                                                                </Grid>
+                                                                                <TextBlock Text="{Binding Category}" Style="{StaticResource MutedText}" FontSize="12" />
+                                                                            </StackPanel>
+                                                                        </StackPanel>
+                                                                    </StackPanel>
+                                                                    <DockPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                                        <TextBlock DockPanel.Dock="Right" Text="{Binding ShareText}" Width="42" TextAlignment="Right" FontWeight="SemiBold" />
+                                                                        <ProgressBar Value="{Binding Share, Mode=OneWay}" Maximum="100" Margin="0,0,10,0" />
+                                                                    </DockPanel>
+                                                                    <TextBlock Grid.Column="3" Text="{Binding CpuText}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                                    <TextBlock Grid.Column="4" Text="{Binding GpuText}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                                    <TextBlock Grid.Column="5" Text="{Binding IoText}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                                </Grid>
+                                                            </Button>
+
+                                                            <!-- Expanded: advice and the individual processes -->
+                                                            <StackPanel Margin="36,0,8,10" Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}">
+                                                                <TextBlock Text="{Binding Advice}" Style="{StaticResource BodyText}" FontSize="13" Margin="0,0,0,6"
+                                                                           Visibility="{Binding Advice, Converter={StaticResource NullToCollapsed}}" />
+                                                                <ItemsControl ItemsSource="{Binding Processes}">
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate DataType="{x:Type vm:ProcessRow}">
+                                                                            <Grid Margin="0,1">
+                                                                                <Grid.ColumnDefinitions>
+                                                                                    <ColumnDefinition Width="*" />
+                                                                                    <ColumnDefinition Width="90" />
+                                                                                    <ColumnDefinition Width="70" />
+                                                                                    <ColumnDefinition Width="70" />
+                                                                                    <ColumnDefinition Width="110" />
+                                                                                </Grid.ColumnDefinitions>
+                                                                                <TextBlock Text="{Binding Name}" Style="{StaticResource MutedText}" FontSize="12" />
+                                                                                <TextBlock Grid.Column="1" Text="{Binding Pid, StringFormat=PID {0}}" Style="{StaticResource MutedText}" FontSize="12" />
+                                                                                <TextBlock Grid.Column="2" Text="{Binding Cpu}" Style="{StaticResource MutedText}" FontSize="12" HorizontalAlignment="Right" />
+                                                                                <TextBlock Grid.Column="3" Text="{Binding Gpu}" Style="{StaticResource MutedText}" FontSize="12" HorizontalAlignment="Right" />
+                                                                                <TextBlock Grid.Column="4" Text="{Binding Io}" Style="{StaticResource MutedText}" FontSize="12" HorizontalAlignment="Right" />
+                                                                            </Grid>
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                        <DataTemplate.Triggers>
+                                                            <DataTrigger Binding="{Binding IsExpanded}" Value="True">
+                                                                <Setter TargetName="Chevron" Property="Text" Value="&#xE70D;" />
+                                                            </DataTrigger>
+                                                        </DataTemplate.Triggers>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                            <TextBlock Style="{StaticResource MutedText}" FontSize="12" Margin="8,8,0,0"
+                                                       Text="Power Impact is an estimate from CPU (60%), GPU (30%) and disk/network activity (10%). Click an app to see its processes." />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </TabItem>
+                            </TabControl>
+                        </StackPanel>
+                    </Border>
 
                     <!-- ============================================ capacity history -->
                     <Border Style="{StaticResource Card}" Visibility="{Binding HasHistory, Converter={StaticResource BoolToVis}}">

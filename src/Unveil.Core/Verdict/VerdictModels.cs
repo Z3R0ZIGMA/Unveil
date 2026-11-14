@@ -76,22 +76,86 @@ public sealed record VerdictSettings
     /// <summary>One app above this share of the power impact while idle makes drain Elevated.</summary>
     public double DominantAppSharePercent { get; init; } = 25;
 
+    /// <summary>
+    /// ...but only if that app's Power Impact is at least this (about 2.5% of the whole CPU), so a big share of a
+    /// near-idle machine does not count as a problem.
+    /// </summary>
+    public double DominantAppMinimumImpact { get; init; } = 1.5;
+
+    /// <summary>Name of the drain thresholds in use, for reports.</summary>
+    public string DrainProfileName { get; init; } = MachineClasses.Describe(MachineClass.ThinAndLight);
+
     public static VerdictSettings Default { get; } = new();
+
+    /// <summary>These settings with the drain thresholds for a type of laptop.</summary>
+    public VerdictSettings For(MachineClass machineClass)
+    {
+        var (elevated, high) = MachineClasses.Thresholds(machineClass);
+        return this with
+        {
+            ElevatedDrainWatts = elevated,
+            HighDrainWatts = high,
+            DrainProfileName = MachineClasses.Describe(machineClass),
+        };
+    }
 }
 
-/// <summary>One app's share of the measured power impact. Filled by the process sampler (Phase 4).</summary>
-public sealed record AppImpact(string Name, double SharePercent);
+/// <summary>Type of laptop, which sets what counts as a normal power draw.</summary>
+public enum MachineClass
+{
+    ThinAndLight,
+    Standard,
+    Performance,
+}
 
-/// <summary>Result of the live drain test (Phase 4). Null until that test has been run.</summary>
+public static class MachineClasses
+{
+    /// <summary>
+    /// Elevated / high drain thresholds in watts. Thin and light comes from plan.md; the other two are defaults
+    /// until unveil.json (Phase 7) makes them configurable.
+    /// </summary>
+    public static (double Elevated, double High) Thresholds(MachineClass c) => c switch
+    {
+        MachineClass.Standard => (12, 20),
+        MachineClass.Performance => (20, 35),
+        _ => (8, 15),
+    };
+
+    public static string Describe(MachineClass c) => c switch
+    {
+        MachineClass.Standard => "Standard laptop",
+        MachineClass.Performance => "Gaming or workstation laptop",
+        _ => "Thin and light laptop",
+    };
+}
+
+/// <summary>One app's part in the drain test, from the process sampler.</summary>
+/// <param name="Name">Display name.</param>
+/// <param name="SharePercent">Share of the total Power Impact, 0-100.</param>
+/// <param name="Impact">Absolute Power Impact score (roughly: 1.5 = 2.5% of the whole CPU).</param>
+/// <param name="Category">Known-offender category, if any (e.g. "Windows Update").</param>
+/// <param name="Advice">What to do about it, if it is a known offender.</param>
+public sealed record AppImpact(string Name, double SharePercent, double Impact = 10, string? Category = null, string? Advice = null);
+
+/// <summary>Result of the live drain test. Null until that test has been run.</summary>
 public sealed record DrainMeasurement
 {
-    public double AverageWatts { get; init; }
+    /// <summary>Average discharge in watts while on battery; null when the charger stayed connected.</summary>
+    public double? AverageWatts { get; init; }
+
+    public double? MinWatts { get; init; }
+
+    public double? MaxWatts { get; init; }
 
     public TimeSpan Duration { get; init; }
 
+    /// <summary>Battery readings taken while on battery.</summary>
     public int SampleCount { get; init; }
 
-    /// <summary>Apps by power impact share, highest first.</summary>
+    /// <summary>True when the charger was connected for some or all of the test.</summary>
+    public bool PluggedIn { get; init; }
+
+    /// <summary>Apps by Power Impact share, highest first.</summary>
     public IReadOnlyList<AppImpact> TopApps { get; init; } = [];
 }
 

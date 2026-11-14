@@ -46,6 +46,11 @@ internal static class ConsoleReport
         }
 
         WriteUsage(o, doc.Usage);
+        if (doc.Activity is { } activity)
+        {
+            WriteApps(o, doc, activity);
+        }
+
         WriteNotes(o, s.Log);
 
         Section(o, "SUMMARY (copy into a ticket)");
@@ -85,6 +90,40 @@ internal static class ConsoleReport
                 _ => "  ",
             };
             o.WriteLine($"   {mark} {f.Text}");
+        }
+    }
+
+    private static void WriteApps(TextWriter o, ReportDocument doc, Unveil.Core.Power.ActivityResult activity)
+    {
+        var drain = doc.Drain;
+        Section(o, $"APPS USING THE MOST POWER (drain test, {Formatting.Duration(activity.Duration)})");
+        if (drain?.AverageWatts is { } w)
+        {
+            o.WriteLine($"  Power draw: {Formatting.Watts(w)} average ({Formatting.Watts(drain.MinWatts)} to {Formatting.Watts(drain.MaxWatts)})" +
+                        (doc.DrainProfile is { } p ? $", limits for a {p.ToLowerInvariant()}" : ""));
+        }
+        else
+        {
+            o.WriteLine("  Power draw: not measured (charger connected)");
+        }
+
+        o.WriteLine($"  Whole-machine CPU: {Formatting.Percent(activity.TotalCpuPercent)}" + (activity.GpuMeasured ? "" : "  (GPU not measured)"));
+        o.WriteLine();
+        o.WriteLine($"  {"App",-34}{"Share",7}{"CPU",8}{"GPU",8}{"Disk+net",11}");
+        foreach (var app in activity.Apps.Take(15))
+        {
+            var name = app.DisplayName + (app.ProcessCount > 1 ? $" ({app.ProcessCount})" : "");
+            if (name.Length > 33)
+            {
+                name = name[..32] + "~";
+            }
+
+            var io = app.IoBytesPerSecond >= 1024 * 1024
+                ? (app.IoBytesPerSecond / 1024 / 1024).ToString("0.0", Inv) + " MB/s"
+                : (app.IoBytesPerSecond / 1024).ToString("0", Inv) + " KB/s";
+            o.WriteLine($"  {name,-34}{Formatting.Percent(app.SharePercent, "0"),7}{Formatting.Percent(app.CpuPercent),8}" +
+                        $"{(activity.GpuMeasured ? Formatting.Percent(app.GpuPercent) : "-"),8}{io,11}" +
+                        (app.Offender is { } off ? $"  ! {off.Category}" : ""));
         }
     }
 

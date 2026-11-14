@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Unveil.Cli;
 using Unveil.Core.Battery;
+using Unveil.Core.Power;
 using Unveil.Core.Reports;
 using Unveil.Core.Verdict;
 
@@ -52,7 +53,14 @@ static int Run(string[] args)
             SkipBatteryReport = options.SkipReport,
         });
 
-        var report = ReportDocument.Create(snapshot);
+        var settings = VerdictSettings.Default.For(options.MachineClass);
+        DrainTestResult? test = null;
+        if (options.SampleSeconds is { } seconds && snapshot.HasBattery)
+        {
+            test = RunDrainTest(seconds);
+        }
+
+        var report = ReportDocument.Create(snapshot, test, settings);
         ConsoleReport.Write(Console.Out, report);
 
         if (options.OutFolder is not null)
@@ -74,6 +82,58 @@ static int Run(string[] args)
         Console.Error.WriteLine($"Unveil failed: {ex.GetType().Name}: {ex.Message}");
         return ExitCodes.Error;
     }
+}
+
+static DrainTestResult RunDrainTest(int seconds)
+{
+    var live = new WmiLiveBatteryReader();
+    var drainTest = new DrainTest(live, new PerfCounterActivitySource());
+    var interactive = !Console.IsInputRedirected && !Console.IsOutputRedirected;
+
+    Console.WriteLine();
+    Console.WriteLine($"DRAIN TEST ({seconds} s)");
+    if (live.Read() is { IsOnBattery: false })
+    {
+        if (interactive)
+        {
+            Console.WriteLine("  The charger is connected. Unplug it now to measure the power draw.");
+            Console.WriteLine("  Waiting up to 60 s for the charger to be unplugged (press Enter to test while plugged in)...");
+            var waited = 0;
+            while (waited < 60 && live.Read() is { IsOnBattery: false })
+            {
+                if (Console.KeyAvailable && Console.ReadKey(intercept: true).Key == ConsoleKey.Enter)
+                {
+                    break;
+                }
+
+                Thread.Sleep(1000);
+                waited++;
+            }
+        }
+        else
+        {
+            Console.WriteLine("  The charger is connected; measuring app activity only.");
+        }
+    }
+
+    Console.WriteLine("  Preparing...");
+    drainTest.WarmUp();
+    Console.WriteLine("  Measuring. Leave the laptop idle: do not type or move the mouse.");
+
+    var lastPrinted = -1;
+    var progress = new SynchronousProgress<DrainTestProgress>(p =>
+    {
+        var elapsed = (int)p.Elapsed.TotalSeconds;
+        if (elapsed / 10 != lastPrinted / 10 || p.Fraction >= 1)
+        {
+            lastPrinted = elapsed;
+            var now = p.LatestWatts is { } w ? $"{w.ToString("0.0", Unveil.Core.Formatting.Inv)} W" : "plugged in";
+            var avg = p.AverageWatts is { } a ? $", average {a.ToString("0.0", Unveil.Core.Formatting.Inv)} W" : "";
+            Console.WriteLine($"  {elapsed,3} s: {now}{avg}");
+        }
+    });
+
+    return drainTest.RunAsync(new DrainTestOptions { Duration = TimeSpan.FromSeconds(seconds) }, progress).GetAwaiter().GetResult();
 }
 
 static void WriteReports(CliOptions options, ReportDocument report)

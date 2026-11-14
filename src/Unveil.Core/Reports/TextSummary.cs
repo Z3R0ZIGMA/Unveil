@@ -41,7 +41,9 @@ public static class TextSummary
 
         if (doc.Drain is { } drain)
         {
-            sb.AppendLine($"Drain test: {Watts(drain.AverageWatts)} average over {Duration(drain.Duration)}");
+            var draw = drain.AverageWatts is { } w ? $"{Watts(w)} average over {Duration(drain.Duration)}" : "plugged in, draw not measured";
+            var apps = drain.TopApps.Count == 0 ? "" : "; top apps: " + string.Join(", ", drain.TopApps.Take(3).Select(a => $"{a.Name} {Percent(a.SharePercent, "0")}"));
+            sb.AppendLine($"Drain test: {draw}{apps}");
         }
 
         sb.Append($"Actions: {string.Join(" ", v.Actions)}");

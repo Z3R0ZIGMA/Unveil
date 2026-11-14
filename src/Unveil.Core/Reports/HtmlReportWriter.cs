@@ -50,6 +50,11 @@ public static class HtmlReportWriter
         List(html, "What to do", "actions", v.Actions.Select(a => (Severity.Neutral, a)), numbered: true);
         List(html, "Why", "evidence", v.Evidence.Select(f => (f.Severity, f.Text)), numbered: false);
 
+        if (doc.Activity is { Apps.Count: > 0 } activity)
+        {
+            AppsTable(html, activity);
+        }
+
         if (s.Report?.CapacityHistory is { Count: > 1 } history)
         {
             CapacityChart(html, history);
@@ -282,6 +287,34 @@ public static class HtmlReportWriter
         html.Append("</svg>\n<p class=\"muted small\">Full charge capacity in mWh. Hover a point for its date and value; the full table is under Technical details.</p></section>\n");
     }
 
+    private static void AppsTable(StringBuilder html, Power.ActivityResult activity)
+    {
+        html.Append("<section class=\"card\"><h2>Apps using the most power</h2>");
+        html.Append($"<p class=\"muted\">Measured over {E(Duration(activity.Duration))} with the laptop idle. Power Impact combines CPU, GPU and disk/network activity; the bar is each app's share.</p>");
+        html.Append("<table class=\"data apps\"><thead><tr><th>App</th><th class=\"num\">Share</th><th class=\"bar-col\"></th>" +
+                    "<th class=\"num\">CPU</th><th class=\"num\">GPU</th><th class=\"num\">Disk + network</th></tr></thead><tbody>\n");
+        foreach (var app in activity.Apps.Take(15))
+        {
+            var note = app.Offender is { } o ? $"<div class=\"note sev-warning\"><span class=\"dot\" aria-hidden=\"true\">!</span>{E(o.Category)}</div>" : "";
+            var count = app.ProcessCount > 1 ? $" <span class=\"muted\">({app.ProcessCount} processes)</span>" : "";
+            html.Append($"<tr><td>{E(app.DisplayName)}{count}{note}</td>" +
+                        $"<td class=\"num\">{E(Percent(app.SharePercent, "0"))}</td>" +
+                        $"<td class=\"bar-col\"><div class=\"bar\"><span style=\"width:{Math.Clamp(app.SharePercent, 0, 100).ToString("0.#", Inv)}%\"></span></div></td>" +
+                        $"<td class=\"num\">{E(Percent(app.CpuPercent))}</td>" +
+                        $"<td class=\"num\">{(activity.GpuMeasured ? E(Percent(app.GpuPercent)) : "-")}</td>" +
+                        $"<td class=\"num\">{E(Rate(app.IoBytesPerSecond))}</td></tr>\n");
+        }
+
+        html.Append("</tbody></table></section>\n");
+    }
+
+    private static string Rate(double bytesPerSecond) => bytesPerSecond switch
+    {
+        >= 1024 * 1024 => (bytesPerSecond / 1024 / 1024).ToString("0.0", Inv) + " MB/s",
+        >= 1024 => (bytesPerSecond / 1024).ToString("0", Inv) + " KB/s",
+        _ => "0 KB/s",
+    };
+
     private static void SystemTable(StringBuilder html, BatterySnapshot s) =>
         Table(html, "Laptop", [
             ("Manufacturer", s.System.Manufacturer),
@@ -353,7 +386,10 @@ public static class HtmlReportWriter
 
         if (doc.Drain is { } drain)
         {
-            rows.Add(("Live drain test", $"{Watts(drain.AverageWatts)} average over {Duration(drain.Duration)} ({drain.SampleCount} samples)"));
+            rows.Add(("Live drain test", drain.AverageWatts is { } w
+                ? $"{Watts(w)} average over {Duration(drain.Duration)} ({drain.SampleCount} readings, {Watts(drain.MinWatts)} to {Watts(drain.MaxWatts)})" +
+                  (doc.DrainProfile is { } profile ? $"; thresholds for a {profile.ToLowerInvariant()}" : "")
+                : "Charger connected; power draw not measured"));
         }
 
         if (rows.Count > 0)
@@ -610,6 +646,12 @@ public static class HtmlReportWriter
         table.data th { text-align: left; color: var(--muted); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--border); }
         table.data td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
+        table.apps td { vertical-align: top; }
+        .bar-col { width: 22%; }
+        .bar { height: 8px; border-radius: 4px; background: var(--border); margin-top: 7px; overflow: hidden; }
+        .bar span { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+        .note { font-size: 13px; color: var(--muted); margin-top: 2px; }
+        .note .dot { width: 14px; height: 14px; font-size: 9px; margin-right: 4px; top: 1px; }
         details summary { cursor: pointer; list-style: revert; }
         details summary h2 { display: inline; }
         details[open] summary { margin-bottom: 10px; }
