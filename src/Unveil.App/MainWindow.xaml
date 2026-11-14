@@ -10,7 +10,7 @@
         Title="Unveil" Icon="unveil.ico"
         Style="{StaticResource UnveilWindow}"
         Width="1200" Height="880" MinWidth="980" MinHeight="600"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="Manual">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
         <StackPanel x:Name="Root" Background="{StaticResource Window}">

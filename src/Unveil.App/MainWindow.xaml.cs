@@ -11,7 +11,27 @@ public partial class MainWindow : Window, IUiServices
     public MainWindow()
     {
         InitializeComponent();
+        FitToScreen();
         SourceInitialized += (_, _) => DarkTitleBar.Apply(this);
+    }
+
+    /// <summary>
+    /// Keeps the whole window, title bar included, on screen. A 14" laptop at 150% scaling has only about
+    /// 1280 x 672 usable units, less than the default 1200 x 880.
+    /// </summary>
+    private void FitToScreen()
+    {
+        const double margin = 24;
+        var area = SystemParameters.WorkArea;
+
+        MinWidth = Math.Min(MinWidth, area.Width);
+        MinHeight = Math.Min(MinHeight, area.Height);
+        Width = Math.Min(Width, area.Width - margin);
+        Height = Math.Min(Height, area.Height - margin);
+
+        WindowStartupLocation = WindowStartupLocation.Manual;
+        Left = area.Left + (area.Width - Width) / 2;
+        Top = area.Top + (area.Height - Height) / 2;
     }
 
     /// <summary>The scrollable content, for the screenshot mode.</summary>
