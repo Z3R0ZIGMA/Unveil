@@ -1,4 +1,6 @@
-# PowerProbe
+# Unveil
+*See what's really draining your battery.*
+
 Portable Windows tool that diagnoses laptop battery health and power-hungry apps.
 
 See [plan.md](plan.md) for the full spec. **Current status: Phase 1** (battery data collection, console output).
@@ -9,19 +11,19 @@ See [plan.md](plan.md) for the full spec. **Current status: Phase 1** (battery d
 
 ## Build and test
 ```
-dotnet build PowerProbe.sln
-dotnet test PowerProbe.sln
+dotnet build Unveil.sln
+dotnet test Unveil.sln
 ```
 
 ## Run (Phase 1 console)
 ```
-dotnet run --project src/PowerProbe.Cli
+dotnet run --project src/Unveil.Cli
 ```
 
 Make a portable single-file exe to copy to other laptops:
 ```
-dotnet publish src/PowerProbe.Cli -c Release -r win-x64 -o publish/win-x64
-dotnet publish src/PowerProbe.Cli -c Release -r win-arm64 -o publish/win-arm64
+dotnet publish src/Unveil.Cli -c Release -r win-x64 -o publish/win-x64
+dotnet publish src/Unveil.Cli -c Release -r win-arm64 -o publish/win-arm64
 ```
 
 Options:
@@ -36,10 +38,10 @@ Exit codes: `0` OK, `10` no battery detected, `20` error.
 
 ## Layout
 ```
-src/PowerProbe.Core/       data collection and parsing (no UI)
-  Battery/                 WMI reader, battery report parser, merge + health calculation
-  SystemInfo/              laptop make/model/serial
-src/PowerProbe.Cli/        console front end
-tests/PowerProbe.Core.Tests/  xUnit tests + synthetic fixtures
-samples/                   real, scrubbed outputs from test laptops
+src/Unveil.Core/          data collection and parsing (no UI)
+  Battery/                WMI reader, battery report parser, merge + health calculation
+  SystemInfo/             laptop make/model/serial
+src/Unveil.Cli/           console front end
+tests/Unveil.Core.Tests/  xUnit tests + synthetic fixtures
+samples/                  real, scrubbed outputs from test laptops
 ```

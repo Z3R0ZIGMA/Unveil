@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Data collection, parsing and verdict engine. No UI code. -->
+  <PropertyGroup>
+    <RootNamespace>Unveil.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="10.0.15" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unveil.Core.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -7,8 +7,8 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <DebugType>embedded</DebugType>
-    <Company>PowerProbe</Company>
-    <Product>PowerProbe</Product>
+    <Company>Unveil</Company>
+    <Product>Unveil</Product>
     <Version>0.1.0</Version>
   </PropertyGroup>
 </Project>

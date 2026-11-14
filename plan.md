@@ -1,4 +1,6 @@
-# PowerProbe — Laptop Battery Diagnostic Tool
+# Unveil — Laptop Battery Diagnostic Tool
+
+*See what's really draining your battery.*
 
 ## 1. Purpose
 
@@ -6,14 +8,14 @@ When a customer says "my battery doesn't last anymore", a technician needs to an
 
 > **Is the battery worn out (replace it), or is something on the machine draining it (fix the software/settings)?**
 
-PowerProbe is a portable Windows tool. A tech can run it from a USB stick or push it through RMM. In under two minutes it collects battery health, identity, live power draw and the processes using the most power. It gives a clear verdict and produces a report the tech can hand to the customer.
+Unveil is a portable Windows tool. A tech can run it from a USB stick or push it through RMM. In under two minutes it collects battery health, identity, live power draw and the processes using the most power. It gives a clear verdict and produces a report the tech can hand to the customer.
 
 ## 2. Target platform and stack
 
 - **OS:** Windows 10 22H2 and Windows 11 (x64 and ARM64)
 - **Language:** C# / .NET 10
 - **UI:** WPF, **dark mode only**, single window, dashboard style (see section 5.1 for the colour scheme)
-- **Distribution:** self-contained, single-file `PowerProbe.exe`. No installer, no .NET install required.
+- **Distribution:** self-contained, single-file `Unveil.exe`. No installer, no .NET install required.
 - **Libraries:** `System.Management` (WMI) and `System.Diagnostics.PerformanceCounter`. No third-party telemetry and no network calls.
 - **Privileges:** runs as a standard user and offers "Restart as Administrator" for the advanced checks. Every feature must degrade gracefully without admin and show what was skipped.
 
@@ -123,7 +125,7 @@ Single window with:
 
 ### 5.1 Theme (dark mode, matches the Unbound app)
 
-PowerProbe must use the same dark colour scheme as the user's other app, Unbound, so the two tools look like a family. Define these as WPF resources in one `Theme.xaml` ResourceDictionary and use them everywhere (no hard-coded colours in views):
+Unveil must use the same dark colour scheme as the user's other app, Unbound, so the two tools look like a family. Define these as WPF resources in one `Theme.xaml` ResourceDictionary and use them everywhere (no hard-coded colours in views):
 
 | Key | Hex | Used for |
 |---|---|---|
@@ -137,7 +139,7 @@ PowerProbe must use the same dark colour scheme as the user's other app, Unbound
 | `Danger` | `#ef4444` | "Replace" verdict, errors, high drain |
 | `SelectionText` | `#ffffff` | Text on accent / selected rows |
 
-Added for PowerProbe's traffic-light verdicts (same palette family as the colours above):
+Added for Unveil's traffic-light verdicts (same palette family as the colours above):
 
 | Key | Hex | Used for |
 |---|---|---|
@@ -164,14 +166,14 @@ Rules:
 ## 7. CLI mode (for RMM / remote use)
 
 ```
-PowerProbe.exe --cli [--sample 60] [--admin-checks] [--out C:\Temp\PowerProbe] [--json] [--html]
+Unveil.exe --cli [--sample 60] [--admin-checks] [--out C:\Temp\Unveil] [--json] [--html]
 ```
 - No UI. Writes the report files and prints the summary to stdout.
 - Exit codes: `0` healthy, `1` software drain, `2` replace battery, `3` both, `10` no battery present, `20` error.
 
 ## 8. Configuration
 
-`powerprobe.json` next to the exe (created with defaults on first run):
+`unveil.json` next to the exe (created with defaults on first run):
 - Health thresholds, cycle-count rating, drain thresholds, sample duration
 - Company name, logo path, report footer text
 - Known-offender process list
@@ -190,17 +192,17 @@ PowerProbe.exe --cli [--sample 60] [--admin-checks] [--out C:\Temp\PowerProbe] [
 ## 10. Project structure
 
 ```
-PowerProbe/
-  PowerProbe.sln
-  src/PowerProbe.Core/        # data collection, parsing, verdict engine (no UI)
+Unveil/
+  Unveil.sln
+  src/Unveil.Core/        # data collection, parsing, verdict engine (no UI)
     Battery/                # WMI + battery report readers
     Power/                  # process sampler, SRUM, sleepstudy, energy parsers
     System/                 # power plan, brightness, startup apps
     Verdict/                # rules engine
     Reports/                # HTML + JSON writers
-  src/PowerProbe.App/         # WPF UI (MVVM)
-  src/PowerProbe.Cli/         # or a --cli switch in App
-  tests/PowerProbe.Core.Tests/  # xUnit, with sample XML/CSV fixtures
+  src/Unveil.App/         # WPF UI (MVVM)
+  src/Unveil.Cli/         # or a --cli switch in App
+  tests/Unveil.Core.Tests/  # xUnit, with sample XML/CSV fixtures
   samples/                  # real battery/sleepstudy/srum outputs for tests
 ```
 
