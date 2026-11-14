@@ -13,6 +13,15 @@ public class KnownOffendersTests
     [InlineData("xmrig", "Crypto miner")]
     [InlineData("iCUE", "RGB / OEM utility")]
     [InlineData("TiWorker.exe", "Windows Update")]
+    [InlineData("iscanruntime", "Management / security agent")]
+    [InlineData("winagent", "Management / security agent")]
+    [InlineData("msp-agent-core", "Management / security agent")]
+    [InlineData("BASupSrvc", "Management / security agent")]
+    [InlineData("NinjaRMMAgent", "Management / security agent")]
+    [InlineData("LTSVC", "Management / security agent")]
+    [InlineData("EPHost", "Antivirus scan")]
+    [InlineData("EPSecurityService", "Antivirus scan")]
+    [InlineData("ManagedAntivirus", "Antivirus scan")]
     public void Known_names_are_matched_case_insensitively(string name, string category)
     {
         Assert.Equal(category, KnownOffenders.Match(name, 1)?.Category);

@@ -20,6 +20,7 @@ public static partial class SampleScrubber
     public static string Text(string text, IEnumerable<string>? names = null)
     {
         text = Sid().Replace(text, "S-1-5-21-" + Redacted);
+        text = MacAddress().Replace(text, Redacted);
         text = UserFolder().Replace(text, "${prefix}" + Redacted);
         foreach (var name in (names ?? DefaultNames()).Where(n => n.Length >= 3))
         {
@@ -33,6 +34,19 @@ public static partial class SampleScrubber
     {
         var list = (names ?? DefaultNames()).ToList();
         var copy = new XDocument(document);
+
+        // Energy report details such as "SSID: HomeWifi": the network name identifies the customer.
+        foreach (var detail in copy.Descendants().Where(d => d.Name.LocalName == "Detail"))
+        {
+            var label = detail.Elements().FirstOrDefault(c => c.Name.LocalName == "Name")?.Value ?? "";
+            if (label.Contains("SSID", StringComparison.OrdinalIgnoreCase)
+                && detail.Elements().FirstOrDefault(c => c.Name.LocalName == "Value") is { } value
+                && !string.IsNullOrWhiteSpace(value.Value))
+            {
+                value.Value = Redacted;
+            }
+        }
+
         foreach (var e in copy.Descendants())
         {
             var local = e.Name.LocalName;
@@ -94,6 +108,10 @@ public static partial class SampleScrubber
 
     [GeneratedRegex(@"S-1-5-21-\d+-\d+-\d+-\d+")]
     private static partial Regex Sid();
+
+    /// <summary>Network hardware addresses, e.g. e8:78:29:14:b1:18 or E8-78-29-14-B1-18 (Wi-Fi access points, adapters).</summary>
+    [GeneratedRegex(@"\b(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}\b")]
+    public static partial Regex MacAddress();
 
     [GeneratedRegex(@"(?<prefix>\\Users\\)(?!REDACTED\\|Public\\|Default\\)[^\\""<>,]+", RegexOptions.IgnoreCase)]
     private static partial Regex UserFolder();

@@ -70,6 +70,10 @@ public class ScrubbingTests
             Assert.False(folder.Success, $"{name} contains a user folder: {folder.Value}");
             var userId = Regex.Match(text, @"UserId=""(?!REDACTED"")[^""]+""");
             Assert.False(userId.Success, $"{name} contains a user ID: {userId.Value}");
+            var mac = Unveil.Core.Admin.SampleScrubber.MacAddress().Match(text);
+            Assert.False(mac.Success, $"{name} contains a MAC address: {mac.Value}");
+            var ssid = Regex.Match(text, @"<Name>[^<]*SSID[^<]*</Name>\s*<Value>(?!REDACTED<)[^<]+</Value>", RegexOptions.IgnoreCase);
+            Assert.False(ssid.Success, $"{name} contains a Wi-Fi network name: {ssid.Value}");
         }
     }
 

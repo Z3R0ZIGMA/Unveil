@@ -176,6 +176,27 @@ public class SampleScrubberTests
     }
 
     [Fact]
+    public void Wifi_network_name_and_mac_addresses_are_removed()
+    {
+        var doc = XDocument.Parse("""
+            <EnergyReport xmlns="http://schemas.microsoft.com/energy/2007">
+              <LogEntry guid="x"><Name>Wireless access point does not support WMM Power Save</Name>
+                <Details>
+                  <Detail guid="a"><Name>SSID</Name><Value>Smith Family WiFi</Value></Detail>
+                  <Detail guid="b"><Name>MAC Address</Name><Value>e8:78:29:14:b1:18</Value></Detail>
+                </Details>
+              </LogEntry>
+            </EnergyReport>
+            """);
+
+        var text = SampleScrubber.Xml(doc, []).ToString();
+
+        Assert.DoesNotContain("Smith Family WiFi", text);
+        Assert.DoesNotContain("e8:78:29", text);
+        Assert.Equal("adapter REDACTED", SampleScrubber.Text("adapter E8-78-29-14-B1-18", []));
+    }
+
+    [Fact]
     public void Srum_trim_keeps_recent_rows_and_a_sample_of_older_ones()
     {
         var lines = new List<string> { "AppId, TimeStamp" };

@@ -21,7 +21,24 @@ public static class KnownOffenders
         ("Windows Search indexer", "Windows Search is indexing files. This normally settles down; if it keeps running, rebuild the index or limit indexed locations.",
             ["searchindexer", "searchprotocolhost", "searchfilterhost"]),
         ("Antivirus scan", "An antivirus scan was running. Schedule full scans for when the laptop is plugged in.",
-            ["msmpeng", "mpdefendercoreservice", "nissrv", "mssense", "avp", "avpui", "ekrn", "bdservicehost", "vsserv", "mcshield", "mfefire", "ccsvchst", "nortonsecurity", "avastsvc", "avgsvc", "sophoshealth", "savservice", "csfalconservice", "sentinelagent"]),
+            ["msmpeng", "mpdefendercoreservice", "nissrv", "mssense", "avp", "avpui", "ekrn", "bdservicehost", "vsserv", "mcshield", "mfefire", "ccsvchst", "nortonsecurity", "avastsvc", "avgsvc", "sophoshealth", "savservice", "csfalconservice", "sentinelagent",
+             // N-able Managed Antivirus / Bitdefender GravityZone endpoint
+             "managedantivirus", "ephost", "ephost.integrity", "epsecurityservice", "epprotectedservice", "epintegrationservice", "epupdateservice", "eplowprivilegeworker", "bdredline"]),
+        ("Management / security agent",
+            "A remote-management or security agent (monitoring, patching, inventory or scanning) was busy. Leave it installed, but schedule its scans, patching and inventory for when the laptop is plugged in, and check it is not stuck repeating a task.",
+            [
+                // N-able N-sight / Advanced Monitoring Agent, Take Control
+                "winagent", "assetscan", "iscanruntime", "fmplugin", "pme.agent", "networkmanagement", "webprotection", "echo.trayicon",
+                "filecacheserviceagent", "requesthandleragent", "msp-agent-core", "thirdpartypatch", "automationmanager.scriptrunner64",
+                "automationmanager.scriptrunner32", "basupsrvc", "basupsrvccnfg", "basupsrvcupdater", "basupsysinf",
+                // ConnectWise Automate / ScreenConnect
+                "ltsvc", "ltsvcmon", "lttray", "screenconnect.clientservice", "screenconnect.windowsclient",
+                // NinjaOne, Datto RMM, Kaseya VSA, Atera, Syncro
+                "ninjarmmagent", "ninjarmmagentpatcher", "ncstreamer", "aemagent", "cagservice", "agentmon", "kaseyaremotecontrolhost",
+                "ateraagent", "agentpackageupgradeagent", "syncro.service.runner", "syncro.overmind.service",
+                // Microsoft Intune, Huntress, ThreatLocker
+                "microsoft.management.services.intunewindowsagent", "agentexecutor", "huntressagent", "huntressrio", "threatlockerservice",
+            ]),
         ("Windows Update", "Windows Update is installing updates. Let it finish while plugged in, then restart.",
             ["tiworker", "trustedinstaller", "wuauclt", "usoclient", "musnotification", "mousocoreworker", "usocoreworker", "wudfhost-update"]),
         ("Crypto miner", "A cryptocurrency miner was running. If the customer did not install it on purpose, treat it as malware and remove it.",
