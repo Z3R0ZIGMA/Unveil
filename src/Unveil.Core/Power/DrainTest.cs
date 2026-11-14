@@ -124,6 +124,7 @@ public sealed class DrainTest(
             Duration = result.Duration > TimeSpan.Zero ? result.Duration : clock.Elapsed,
             SampleCount = watts.Count,
             PluggedIn = pluggedIn,
+            WholeMachineCpuPercent = result.SnapshotCount >= 2 ? Math.Round(result.TotalCpuPercent, 1) : null,
             TopApps = result.Apps
                 .Take(options.TopAppCount)
                 .Select(a => new AppImpact(a.DisplayName, Math.Round(a.SharePercent, 1), Math.Round(a.Impact, 2), a.Offender?.Category, a.Offender?.Advice))

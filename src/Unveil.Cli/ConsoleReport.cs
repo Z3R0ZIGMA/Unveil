@@ -25,6 +25,7 @@ internal static class ConsoleReport
 
         WriteVerdict(o, doc.Verdict);
         WriteSystem(o, s);
+        WriteSettings(o, doc.SettingChecks);
 
         if (s.HasBattery)
         {
@@ -129,6 +130,21 @@ internal static class ConsoleReport
             o.WriteLine($"  {name,-34}{Formatting.Percent(app.SharePercent, "0"),7}{Formatting.Percent(app.CpuPercent),8}" +
                         $"{(activity.GpuMeasured ? Formatting.Percent(app.GpuPercent) : "-"),8}{io,11}" +
                         (app.Offender is { } off ? $"  ! {off.Category}" : ""));
+        }
+    }
+
+    private static void WriteSettings(TextWriter o, IReadOnlyList<Unveil.Core.SystemInfo.SettingCheck> checks)
+    {
+        if (checks.Count == 0)
+        {
+            return;
+        }
+
+        Section(o, "POWER SETTINGS");
+        foreach (var c in checks)
+        {
+            var mark = c.Severity switch { Severity.Good => "ok", Severity.Warning => "! ", _ => "  " };
+            o.WriteLine($"  {mark} {c.Name,-28}{c.Value}");
         }
     }
 

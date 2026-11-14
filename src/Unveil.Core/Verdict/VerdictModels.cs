@@ -82,6 +82,12 @@ public sealed record VerdictSettings
     /// </summary>
     public double DominantAppMinimumImpact { get; init; } = 1.5;
 
+    /// <summary>
+    /// When the draw is elevated but the whole machine used less CPU than this (%), the apps were idle and the cause is the
+    /// screen, settings or hardware (Phase 6).
+    /// </summary>
+    public double IdleCpuPercent { get; init; } = 10;
+
     /// <summary>Asleep on battery, using more than this % of a charge per hour counts as high sleep drain (Phase 5).</summary>
     public double HighSleepDrainPercentPerHour { get; init; } = 1.5;
 
@@ -160,6 +166,9 @@ public sealed record DrainMeasurement
 
     /// <summary>True when the charger was connected for some or all of the test.</summary>
     public bool PluggedIn { get; init; }
+
+    /// <summary>Whole-machine CPU use during the test, 0-100 (low means the apps were idle).</summary>
+    public double? WholeMachineCpuPercent { get; init; }
 
     /// <summary>Apps by Power Impact share, highest first.</summary>
     public IReadOnlyList<AppImpact> TopApps { get; init; } = [];

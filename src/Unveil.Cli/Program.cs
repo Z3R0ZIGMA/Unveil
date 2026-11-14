@@ -77,7 +77,8 @@ static int Run(string[] args)
             }, new CollectionLog());
         }
 
-        var report = ReportDocument.Create(snapshot, test, settings, admin: admin);
+        var powerSettings = snapshot.HasBattery ? new Unveil.Core.SystemInfo.PowerSettingsReader().Read(new CollectionLog()) : null;
+        var report = ReportDocument.Create(snapshot, test, settings, admin: admin, powerSettings: powerSettings);
         ConsoleReport.Write(Console.Out, report);
 
         if (options.OutFolder is not null)

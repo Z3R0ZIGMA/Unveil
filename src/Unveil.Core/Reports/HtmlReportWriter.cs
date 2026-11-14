@@ -50,6 +50,11 @@ public static class HtmlReportWriter
         List(html, "What to do", "actions", v.Actions.Select(a => (Severity.Neutral, a)), numbered: true);
         List(html, "Why", "evidence", v.Evidence.Select(f => (f.Severity, f.Text)), numbered: false);
 
+        if (doc.SettingChecks.Count > 0)
+        {
+            SettingsTable(html, doc.SettingChecks);
+        }
+
         if (doc.Activity is { Apps.Count: > 0 } activity)
         {
             AppsTable(html, activity);
@@ -326,6 +331,19 @@ public static class HtmlReportWriter
                         $"<td class=\"num\">{E(Percent(app.CpuPercent))}</td>" +
                         $"<td class=\"num\">{(activity.GpuMeasured ? E(Percent(app.GpuPercent)) : "-")}</td>" +
                         $"<td class=\"num\">{E(Rate(app.IoBytesPerSecond))}</td></tr>\n");
+        }
+
+        html.Append("</tbody></table></section>\n");
+    }
+
+    private static void SettingsTable(StringBuilder html, IReadOnlyList<SystemInfo.SettingCheck> checks)
+    {
+        html.Append("<section class=\"card\"><h2>Power settings</h2><table class=\"data settings\"><tbody>\n");
+        foreach (var c in checks)
+        {
+            var advice = c.Severity == Severity.Warning && c.Advice is { } a ? $"<div class=\"note\">{E(a)}</div>" : "";
+            html.Append($"<tr class=\"{SevClass(c.Severity)}\"><td class=\"icon-col\"><span class=\"dot\" aria-hidden=\"true\">{Icon(c.Severity)}</span>" +
+                        $"<span class=\"sr\">{SevLabel(c.Severity)}</span></td><td>{E(c.Name)}</td><td>{E(c.Value)}{advice}</td></tr>\n");
         }
 
         html.Append("</tbody></table></section>\n");
@@ -735,6 +753,9 @@ public static class HtmlReportWriter
         table.data td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
         .num { text-align: right; font-variant-numeric: tabular-nums; }
         table.apps td { vertical-align: top; }
+        table.settings td { vertical-align: top; }
+        table.settings .icon-col { width: 28px; }
+        table.settings td:nth-child(2) { color: var(--muted); width: 34%; }
         .bar-col { width: 22%; }
         .bar { height: 8px; border-radius: 4px; background: var(--border); margin-top: 7px; overflow: hidden; }
         .bar span { display: block; height: 100%; border-radius: 4px; background: var(--accent); }

@@ -2,6 +2,7 @@ using System.Reflection;
 using Unveil.Core.Admin;
 using Unveil.Core.Battery;
 using Unveil.Core.Power;
+using Unveil.Core.SystemInfo;
 using Unveil.Core.Verdict;
 
 namespace Unveil.Core.Reports;
@@ -37,24 +38,34 @@ public sealed record ReportDocument
     /// <summary>Administrator-only checks (energy history, sleep study, energy diagnostics); null when not attempted.</summary>
     public AdminData? Admin { get; init; }
 
+    /// <summary>Power settings as read (Phase 6); null when not read.</summary>
+    public PowerSettings? PowerSettings { get; init; }
+
+    /// <summary>The settings checks and advice built from <see cref="PowerSettings"/>.</summary>
+    public IReadOnlyList<SettingCheck> SettingChecks { get; init; } = [];
+
     public static ReportDocument Create(
         BatterySnapshot snapshot,
         DrainTestResult? test = null,
         VerdictSettings? settings = null,
         DateTimeOffset? generatedAt = null,
-        AdminData? admin = null)
+        AdminData? admin = null,
+        PowerSettings? powerSettings = null)
     {
         settings ??= VerdictSettings.Default;
+        var checks = powerSettings is null ? [] : SettingsAdvisor.Evaluate(powerSettings);
         return new ReportDocument
         {
             GeneratedAt = generatedAt ?? DateTimeOffset.Now,
             Snapshot = snapshot,
-            Verdict = VerdictEngine.Evaluate(snapshot, test?.Measurement, settings, admin),
+            Verdict = VerdictEngine.Evaluate(snapshot, test?.Measurement, settings, admin, checks),
             Usage = UsageAnalyzer.Summarize(snapshot.Report),
             Drain = test?.Measurement,
             Activity = test?.Activity,
             DrainProfile = test is null ? null : settings.DrainProfileName,
             Admin = admin,
+            PowerSettings = powerSettings,
+            SettingChecks = checks,
         };
     }
 

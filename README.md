@@ -3,7 +3,7 @@
 
 Portable Windows tool that diagnoses laptop battery health and power-hungry apps.
 
-See [plan.md](plan.md) for the full spec. **Current status: Phase 5** (desktop app with the guided drain test, power hogs, and administrator checks: energy use by app over recent days, sleep study and Windows energy diagnostics; plus the console tool).
+See [plan.md](plan.md) for the full spec. **Current status: Phase 6** (desktop app with the guided drain test, power hogs, administrator checks, and power settings checks with recommendations; plus the console tool).
 
 ## Requirements
 - Windows 10 22H2 or Windows 11 (x64 or ARM64)
@@ -71,7 +71,7 @@ Exit codes: `0` healthy, `1` software drain, `2` battery worn/replace, `3` both,
 ```
 src/Unveil.Core/          data collection, parsing, verdict and reports (no UI)
   Battery/                WMI reader, battery report parser, merge, health, usage summary
-  SystemInfo/             laptop make/model/serial
+  SystemInfo/             laptop make/model/serial; power settings reader and advisor
   Verdict/                verdict engine and capacity trend check
   Power/                  drain test, process sampler, Power Impact scoring, known offenders
   Admin/                  SRUM, sleep study and energy diagnostics parsers, admin collector, sample scrubber

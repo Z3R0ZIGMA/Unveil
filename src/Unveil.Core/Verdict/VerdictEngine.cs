@@ -1,5 +1,6 @@
 using Unveil.Core.Admin;
 using Unveil.Core.Battery;
+using Unveil.Core.SystemInfo;
 using static Unveil.Core.Formatting;
 
 namespace Unveil.Core.Verdict;
@@ -27,9 +28,11 @@ public static class VerdictEngine
         BatterySnapshot snapshot,
         DrainMeasurement? drain = null,
         VerdictSettings? settings = null,
-        AdminData? admin = null)
+        AdminData? admin = null,
+        IReadOnlyList<SettingCheck>? checks = null)
     {
         settings ??= VerdictSettings.Default;
+        checks ??= [];
 
         if (!snapshot.HasBattery)
         {
@@ -39,7 +42,8 @@ public static class VerdictEngine
         var evidence = new List<Finding>();
         var battery = AssessBattery(snapshot, settings, evidence);
         var drainResult = AssessDrain(drain, settings, evidence);
-        var adminResult = AssessAdmin(admin, settings, evidence);
+        var settingsActions = AssessSettings(checks, evidence);
+        var adminResult = AssessAdmin(admin, settings, evidence, checks);
 
         // High drain while asleep is software/driver drain too ("it's dead in the morning").
         if (adminResult.SleepCause is { } sleepCause)
@@ -53,15 +57,41 @@ public static class VerdictEngine
 
         AddContext(snapshot, evidence);
 
-        return Combine(snapshot, battery, drainResult, settings, evidence, adminResult.Actions);
+        return Combine(snapshot, battery, drainResult, settings, evidence, settingsActions.Concat(adminResult.Actions).ToList());
+    }
+
+    // ---------------------------------------------------------------- settings (Phase 6)
+
+    /// <summary>Warnings become evidence and actions; the settings that are fine are summed up in one line.</summary>
+    private static List<string> AssessSettings(IReadOnlyList<SettingCheck> checks, List<Finding> evidence)
+    {
+        var actions = new List<string>();
+        foreach (var c in checks.Where(c => c.Severity == Severity.Warning))
+        {
+            evidence.Add(new Finding(Severity.Warning, c.Finding ?? $"{c.Name}: {c.Value}."));
+            if (c.Advice is { } advice)
+            {
+                actions.Add(advice);
+            }
+        }
+
+        var fine = checks.Where(c => c.Severity == Severity.Good && c.Key is "power-mode" or "brightness" or "refresh-rate" or "battery-saver" or "screen-off" or "sleep").ToList();
+        if (fine.Count > 0)
+        {
+            evidence.Add(new Finding(Severity.Good, "These settings look fine: " + string.Join(", ", fine.Select(c => $"{Lower(c.Name)} {c.Value}")) + "."));
+        }
+
+        return actions;
     }
 
     // ---------------------------------------------------------------- admin checks (Phase 5)
 
     private sealed record AdminAssessment(string? SleepCause, IReadOnlyList<string> Actions);
 
-    private static AdminAssessment AssessAdmin(AdminData? admin, VerdictSettings settings, List<Finding> evidence)
+    private static AdminAssessment AssessAdmin(AdminData? admin, VerdictSettings settings, List<Finding> evidence, IReadOnlyList<SettingCheck> checks)
     {
+        // When the settings were read directly, the energy report's notes on the same timeouts would repeat them.
+        bool Known(string key) => checks.Any(c => c.Key == key && c.Severity != Severity.Neutral);
         var actions = new List<string>();
         if (admin is null)
         {
@@ -125,13 +155,13 @@ public static class VerdictEngine
             evidence.Add(new Finding(energy.ErrorCount > 0 ? Severity.Warning : Severity.Good,
                 $"Windows energy diagnostics found {energy.ErrorCount} error{(energy.ErrorCount == 1 ? "" : "s")} and {energy.WarningCount} warning{(energy.WarningCount == 1 ? "" : "s")}."));
 
-            if (energy.Find(EnergyDiagnostics.Known.DisplayTimeoutDisabledOnBattery) is not null)
+            if (!Known("screen-off") && energy.Find(EnergyDiagnostics.Known.DisplayTimeoutDisabledOnBattery) is not null)
             {
                 evidence.Add(new Finding(Severity.Warning, "On battery the screen is set to never turn off by itself."));
                 actions.Add("Set the screen to turn off after a few minutes on battery (it is set to never turn off).");
             }
 
-            if (energy.Find(EnergyDiagnostics.Known.SleepTimeoutDisabledOnBattery) is not null)
+            if (!Known("sleep") && energy.Find(EnergyDiagnostics.Known.SleepTimeoutDisabledOnBattery) is not null)
             {
                 evidence.Add(new Finding(Severity.Warning, "On battery the laptop is set to never go to sleep by itself."));
                 actions.Add("Set the laptop to sleep after some minutes of inactivity on battery (it is set to never sleep).");
@@ -253,7 +283,7 @@ public static class VerdictEngine
 
     // ---------------------------------------------------------------- drain
 
-    private sealed record DrainAssessment(DrainStatus Status, DrainMeasurement? Measurement, string? Cause);
+    private sealed record DrainAssessment(DrainStatus Status, DrainMeasurement? Measurement, string? Cause, bool AppsIdle = false);
 
     private static DrainAssessment AssessDrain(DrainMeasurement? drain, VerdictSettings settings, List<Finding> evidence)
     {
@@ -318,6 +348,20 @@ public static class VerdictEngine
             status = status == DrainStatus.Normal ? DrainStatus.Elevated : status;
             var apps = string.Join(", ", dominant.Select(a => $"{a.Name} ({Percent(a.SharePercent, "0")} of power)"));
             cause = cause is null ? apps : $"{cause}, mostly from {apps}";
+        }
+
+        // High draw with the apps idle: the screen, settings or hardware are using the power, not software.
+        var appsIdle = drain.AverageWatts is not null
+            && status is DrainStatus.Elevated or DrainStatus.High
+            && dominant.Count == 0
+            && drain.WholeMachineCpuPercent is { } cpu && cpu < settings.IdleCpuPercent;
+        if (appsIdle)
+        {
+            evidence.Add(new Finding(Severity.Warning,
+                $"The apps were mostly idle during the test ({Percent(drain.WholeMachineCpuPercent)} CPU), so the extra draw is coming from " +
+                "the screen, power settings or hardware rather than from apps."));
+            cause = $"a power draw of {Watts(drain.AverageWatts)} while the apps were mostly idle (likely the screen or settings)";
+            return new DrainAssessment(status, drain, cause, AppsIdle: true);
         }
 
         return new DrainAssessment(status, drain, cause);
@@ -452,6 +496,12 @@ public static class VerdictEngine
             actions.Add("The battery does not report enough data to measure its health; compare the runtime with what the customer expects.");
         }
 
+        // Settings and admin findings next: they are concrete fixes.
+        foreach (var action in adminActions.Where(a => !actions.Contains(a)))
+        {
+            actions.Add(action);
+        }
+
         if (drain.Measurement is { } m)
         {
             // Advice for known offenders that were active, whatever the verdict.
@@ -462,8 +512,16 @@ public static class VerdictEngine
 
             if (drainBad)
             {
-                var apps = m.TopApps.Where(a => a.Advice is null && a.SharePercent >= 10).Take(5).ToList();
-                if (apps.Count > 0)
+                var apps = m.TopApps.Where(a => a.Advice is null && a.SharePercent >= 10).Take(3).ToList();
+                if (drain.AppsIdle)
+                {
+                    // The apps were idle, so naming the "top" app would send the tech the wrong way.
+                    if (!adminActions.Any())
+                    {
+                        actions.Add("The apps were mostly idle: check the screen brightness, the power mode and connected devices (USB, external screens).");
+                    }
+                }
+                else if (apps.Count > 0)
                 {
                     actions.AddRange(apps.Select(a => $"Check {a.Name}: it used {Percent(a.SharePercent, "0")} of the power during the test."));
                 }
@@ -472,11 +530,6 @@ public static class VerdictEngine
                     actions.Add($"Check background apps and power settings: the draw was {Watts(m.AverageWatts)} (normal is below {Watts(settings.ElevatedDrainWatts, "0")}).");
                 }
             }
-        }
-
-        foreach (var action in adminActions.Where(a => !actions.Contains(a)))
-        {
-            actions.Add(action);
         }
 
         if (drain.Measurement is null)

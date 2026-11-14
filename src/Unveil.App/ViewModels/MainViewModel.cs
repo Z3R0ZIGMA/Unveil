@@ -216,9 +216,12 @@ public sealed partial class MainViewModel : ObservableObject
         {
             var snapshot = await Task.Run(_collect);
             _snapshot = snapshot;
+            _powerSettings = snapshot.HasBattery
+                ? await Task.Run(() => new Unveil.Core.SystemInfo.PowerSettingsReader().Read(new Unveil.Core.CollectionLog()))
+                : null;
             _lastTest = null; // a fresh check makes the old test results stale
             _admin = null;
-            var report = ReportDocument.Create(snapshot, null, Settings);
+            var report = ReportDocument.Create(snapshot, null, Settings, powerSettings: _powerSettings);
             Apply(report);
             StatusText = $"Checked {report.GeneratedAt.ToString("HH:mm", Inv)} as {(snapshot.IsAdministrator ? "administrator" : "standard user")}";
             await ReadLiveAsync();
@@ -354,6 +357,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         ApplyActivity(report);
         ApplyAdmin(report);
+        ApplySettings(report);
         Details = BuildDetails(s);
         Notes = s.Log.Count == 0
             ? ["All sources were read without problems."]
