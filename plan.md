@@ -24,7 +24,7 @@
 - **App names (after Phase 8):** Windows' own processes get plain names and a one-line role ("Desktop Window Manager:
   draws everything on the screen"). Apps with the same name are merged into one row. Service names are read from the
   Windows service list, so they also work as a standard user.
-- **Privacy:** [PRIVACY.md](PRIVACY.md) describes exactly what is read and written. Reports leave out the computer name,
+- **Privacy:** The Privacy section of [README.md](README.md#privacy) describes exactly what is read and written. Reports leave out the computer name,
   Wi-Fi network names, MAC addresses, account SIDs and user folder names (section 2 asked only for no telemetry and
   no network calls).
 - **Docs:** user guide in README.md; building, testing and ground rules in [DEVELOPMENT.md](DEVELOPMENT.md).

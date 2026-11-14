@@ -62,7 +62,7 @@ public static class EnergyDiagnosticsParser
 {
     /// <summary>
     /// Details end up in the app and in exported reports, so Wi-Fi network names, MAC addresses, account SIDs and
-    /// user folder names are removed as they are read (PRIVACY.md). The rest (programs, devices) stays.
+    /// user folder names are removed as they are read (README.md, Privacy). The rest (programs, devices) stays.
     /// </summary>
     internal static KeyValuePair<string, string> Private(string name, string value) =>
         new(name, name.Contains("SSID", StringComparison.OrdinalIgnoreCase) && value.Length > 0

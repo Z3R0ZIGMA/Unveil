@@ -56,7 +56,7 @@ draw limits per laptop type, sleep, settings checks) or to flag extra battery-dr
 
 Privacy: Unveil makes no network connections and sends nothing anywhere. It only reads; it never changes
 settings. Exported reports contain the laptop and battery serial numbers: treat them as client data.
-Details: https://github.com/Z3R0ZIGMA/Unveil/blob/main/PRIVACY.md
+Details: https://github.com/Z3R0ZIGMA/Unveil/blob/main/README.md#privacy
 
 If Windows shows "Windows protected your PC", click More info > Run anyway (the app is not code-signed yet).
 "@ | Set-Content (Join-Path $out "README.txt") -Encoding UTF8

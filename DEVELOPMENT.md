@@ -53,7 +53,7 @@ assets/                   the app icon and the script that draws it
 ```
 
 ## Ground rules
-- **No network calls and no telemetry**, ever. See [PRIVACY.md](PRIVACY.md), and keep it accurate when you change
+- **No network calls and no telemetry**, ever. See the Privacy section of [README.md](README.md#privacy), and keep it accurate when you change
   what Unveil reads or writes.
 - **Read only.** Unveil never changes settings on the laptop.
 - **Degrade gracefully.** Every collector catches its own failures, writes them to the `CollectionLog` and carries on.
