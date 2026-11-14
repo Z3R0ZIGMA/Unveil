@@ -19,6 +19,9 @@ public interface IUiServices
     string? PickSavePath(string suggestedFileName);
 
     void OpenFile(string path);
+
+    /// <summary>Starts Unveil again elevated and closes this instance. False if the user cancelled the UAC prompt.</summary>
+    bool RestartAsAdministrator();
 }
 
 public sealed record FindingItem(Severity Severity, string Text);
@@ -47,6 +50,7 @@ public sealed partial class MainViewModel : ObservableObject
         _live = live;
         _ui = ui;
         InitTest(createTest ?? Unveil.Core.Power.DrainTest.CreateDefault);
+        InitAdmin();
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy && Stage == TestStage.Idle);
         CopySummaryCommand = new RelayCommand(CopySummary, () => Report is not null);
@@ -213,11 +217,13 @@ public sealed partial class MainViewModel : ObservableObject
             var snapshot = await Task.Run(_collect);
             _snapshot = snapshot;
             _lastTest = null; // a fresh check makes the old test results stale
+            _admin = null;
             var report = ReportDocument.Create(snapshot, null, Settings);
             Apply(report);
             StatusText = $"Checked {report.GeneratedAt.ToString("HH:mm", Inv)} as {(snapshot.IsAdministrator ? "administrator" : "standard user")}";
             await ReadLiveAsync();
             _liveTimer.Start();
+            _ = LoadAdminAsync(); // energy history and sleep study, in the background (admin only)
         }
 #pragma warning disable CA1031 // The UI must never crash on a collection failure; show it instead.
         catch (Exception ex)
@@ -347,6 +353,7 @@ public sealed partial class MainViewModel : ObservableObject
             e.CycleCount is > 0 ? Number(e.CycleCount) : "-")).ToList();
 
         ApplyActivity(report);
+        ApplyAdmin(report);
         Details = BuildDetails(s);
         Notes = s.Log.Count == 0
             ? ["All sources were read without problems."]

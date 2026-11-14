@@ -277,7 +277,7 @@ public sealed partial class MainViewModel
             return;
         }
 
-        Apply(ReportDocument.Create(_snapshot, _lastTest, Settings));
+        Apply(ReportDocument.Create(_snapshot, _lastTest, Settings, admin: _admin));
     }
 
     private void ApplyActivity(ReportDocument report)

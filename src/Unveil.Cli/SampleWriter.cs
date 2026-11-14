@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Unveil.Core.Admin;
 using Unveil.Core.Battery;
 
 namespace Unveil.Cli;
@@ -19,7 +20,7 @@ internal static class SampleWriter
         Converters = { new JsonStringEnumConverter() },
     };
 
-    public static void Save(string folder, BatterySnapshot snapshot, TextWriter output)
+    public static void Save(string folder, BatterySnapshot snapshot, TextWriter output, AdminData? admin = null)
     {
         Directory.CreateDirectory(folder);
         var stem = $"{Slug(snapshot.System.Manufacturer)}-{Slug(snapshot.System.Model)}-" +
@@ -71,6 +72,34 @@ internal static class SampleWriter
         };
         File.WriteAllText(wmiPath, JsonSerializer.Serialize(wmi, Json), new UTF8Encoding(false));
         output.WriteLine($"  {wmiPath}");
+
+        if (admin?.Raw is { } raw)
+        {
+            if (raw.SrumCsv is { } srum)
+            {
+                var path = Path.Combine(folder, $"{stem}-srum.csv");
+                var trimmed = SampleScrubber.TrimSrum(srum, admin.CollectedAt, TimeSpan.FromHours(26));
+                File.WriteAllText(path, SampleScrubber.Text(trimmed), new UTF8Encoding(false));
+                output.WriteLine($"  {path}");
+            }
+
+            if (raw.SleepStudy is { } sleep)
+            {
+                // Per-app power estimates inside each session are bulky and not used by the parser.
+                var copy = new System.Xml.Linq.XDocument(sleep);
+                copy.Descendants().Where(e => e.Name.LocalName is "SrumData" or "SearchIndexerData").ToList().ForEach(e => e.Remove());
+                var path = Path.Combine(folder, $"{stem}-sleepstudy.xml");
+                SampleScrubber.Xml(copy).Save(path);
+                output.WriteLine($"  {path}");
+            }
+
+            if (raw.Energy is { } energy)
+            {
+                var path = Path.Combine(folder, $"{stem}-energy.xml");
+                SampleScrubber.Xml(energy).Save(path);
+                output.WriteLine($"  {path}");
+            }
+        }
     }
 
     private static string? Redact(string? value) => value is null ? null : BatteryReportScrubber.Redacted;

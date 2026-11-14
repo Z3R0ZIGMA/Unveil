@@ -44,10 +44,36 @@ public partial class App : Application
                     await viewModel.RunTestAsync(skipUnplug: true, TimeSpan.FromSeconds(seconds));
                 }
 
+                // Developer aid: `--run-energy` runs the 60-second energy diagnostics first (admin only).
+                if (e.Args.Contains("--run-energy", StringComparer.OrdinalIgnoreCase) && viewModel.IsAdministrator)
+                {
+                    await viewModel.RunEnergyAsync();
+                }
+
+                // Wait for the admin data (energy history, sleep study) that loads in the background.
+                for (var i = 0; i < 60 && viewModel.AdminLoading; i++)
+                {
+                    await Task.Delay(500);
+                }
+
                 // Let live readings and layout settle (longer when simulating, so the sparkline has points).
                 var simulating = e.Args.Contains("--simulate-discharge", StringComparer.OrdinalIgnoreCase);
                 await Task.Delay(TimeSpan.FromSeconds(simulating ? 16 : 2.5));
-                SaveScreenshot(window.RootContent, screenshotPath);
+                // Developer aid: `--show-tab all` saves one image per power hogs tab (file-tab0.png ... file-tab3.png).
+                if (e.Args.Contains("--show-tab", StringComparer.OrdinalIgnoreCase))
+                {
+                    for (var tab = 0; tab < window.PowerTabControl.Items.Count; tab++)
+                    {
+                        window.PowerTabControl.SelectedIndex = tab;
+                        await Task.Delay(300);
+                        SaveScreenshot(window.RootContent, Path.ChangeExtension(screenshotPath, null) + $"-tab{tab}.png");
+                    }
+                }
+                else
+                {
+                    SaveScreenshot(window.RootContent, screenshotPath);
+                }
+
                 Shutdown();
             };
         }
@@ -101,7 +127,7 @@ public partial class App : Application
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
         {
-            dc.DrawRectangle(new VisualBrush(element), null, new Rect(0, 0, width, height));
+            dc.DrawRectangle(new VisualBrush(element) { Stretch = Stretch.None, AlignmentX = AlignmentX.Left, AlignmentY = AlignmentY.Top }, null, new Rect(0, 0, width, height));
         }
 
         var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);

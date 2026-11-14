@@ -23,7 +23,7 @@
   <!-- Synthetic fixtures live next to the tests; real (scrubbed) reports live in /samples. -->
   <ItemGroup>
     <None Include="Fixtures\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\samples\**\*.xml" LinkBase="samples" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\samples\**\*" LinkBase="samples" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

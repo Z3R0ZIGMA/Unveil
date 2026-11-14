@@ -37,6 +37,9 @@ public partial class MainWindow : Window, IUiServices
     /// <summary>The scrollable content, for the screenshot mode.</summary>
     public FrameworkElement RootContent => Root;
 
+    /// <summary>The power hogs tabs, for the screenshot mode.</summary>
+    public System.Windows.Controls.TabControl PowerTabControl => PowerTabs;
+
     public void CopyText(string text) => Clipboard.SetText(text);
 
     public string? PickSavePath(string suggestedFileName)
@@ -50,6 +53,26 @@ public partial class MainWindow : Window, IUiServices
             AddExtension = true,
         };
         return dialog.ShowDialog(this) == true ? dialog.FileName : null;
+    }
+
+    public bool RestartAsAdministrator()
+    {
+        if (Environment.ProcessPath is not { } exe)
+        {
+            return false;
+        }
+
+        try
+        {
+            // Shows the Windows UAC prompt. Cancelling it throws (error 1223) and Unveil keeps running.
+            using var _ = Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true, Verb = "runas" });
+            Application.Current.Shutdown();
+            return true;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
     }
 
     public void OpenFile(string path)

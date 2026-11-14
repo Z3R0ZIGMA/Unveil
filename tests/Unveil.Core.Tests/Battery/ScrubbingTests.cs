@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using System.Text.Json;
 using System.Xml.Linq;
 using Unveil.Core.Battery;
@@ -55,6 +56,20 @@ public class ScrubbingTests
             {
                 Assert.True(value is null or BatteryReportScrubber.Redacted, $"{Path.GetFileName(file)} contains an unscrubbed serial/ID: {value}");
             }
+        }
+
+        // Every sample (XML, CSV, JSON): no account SIDs, no real user folders, no real UserId attributes.
+        var all = Directory.GetFiles(TestFiles.SamplesFolder, "*", SearchOption.AllDirectories);
+        Assert.Contains(all, f => f.EndsWith(".csv", StringComparison.OrdinalIgnoreCase));
+        foreach (var file in all)
+        {
+            var text = File.ReadAllText(file);
+            var name = Path.GetFileName(file);
+            Assert.False(Regex.IsMatch(text, @"S-1-5-21-\d"), $"{name} contains a user account SID");
+            var folder = Regex.Match(text, @"\\Users\\(?!REDACTED\\|Public\\|Default\\)[^\\""<>,]+\\", RegexOptions.IgnoreCase);
+            Assert.False(folder.Success, $"{name} contains a user folder: {folder.Value}");
+            var userId = Regex.Match(text, @"UserId=""(?!REDACTED"")[^""]+""");
+            Assert.False(userId.Success, $"{name} contains a user ID: {userId.Value}");
         }
     }
 

@@ -27,6 +27,11 @@ internal sealed record CliOptions
 
     public MachineClass MachineClass { get; init; } = MachineClass.ThinAndLight;
 
+    /// <summary>Run the administrator-only checks (energy history, sleep study, energy diagnostics).</summary>
+    public bool AdminChecks { get; init; }
+
+    public int EnergySeconds { get; init; } = 60;
+
     public string? Error { get; init; }
 
     public static CliOptions Parse(string[] args)
@@ -69,6 +74,17 @@ internal sealed record CliOptions
                     }
 
                     options = options with { SampleSeconds = seconds };
+                    break;
+                case "--admin-checks":
+                    options = options with { AdminChecks = true };
+                    break;
+                case "--energy-seconds":
+                    if (!TryValue(args, ref i, out var energyText) || !int.TryParse(energyText, out var energySeconds) || energySeconds is < 0 or > 600)
+                    {
+                        return options with { Error = "--energy-seconds needs a number from 0 (skip) to 600" };
+                    }
+
+                    options = options with { EnergySeconds = energySeconds };
                     break;
                 case "--class":
                     if (!TryValue(args, ref i, out var cls))
@@ -151,6 +167,7 @@ internal sealed record CliOptions
 
             Usage:
               Unveil.Cli.exe [--sample [seconds]] [--class thin|standard|performance]
+                             [--admin-checks [--energy-seconds N]]
                              [--out <folder>] [--json] [--html] [--open]
                              [--save-report <folder>] [--skip-wmi] [--skip-report]
 
@@ -159,6 +176,9 @@ internal sealed record CliOptions
                                       battery and which apps use the most power. Leave the laptop idle.
               --class <type>          Laptop type for the drain limits: thin (default, 8/15 W),
                                       standard (12/20 W) or performance (20/35 W).
+              --admin-checks          Needs an elevated prompt: energy use by app (SRUM), sleep study
+                                      and Windows energy diagnostics (60 s). Skipped if not admin.
+              --energy-seconds <n>    Length of the energy diagnostics (default 60, 0 = skip).
               --out <folder>          Write the report to this folder (JSON and HTML unless one is chosen).
               --json                  Write the JSON report (all collected data + verdict).
               --html                  Write the HTML report for the customer.

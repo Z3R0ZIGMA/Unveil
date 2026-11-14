@@ -82,6 +82,12 @@ public sealed record VerdictSettings
     /// </summary>
     public double DominantAppMinimumImpact { get; init; } = 1.5;
 
+    /// <summary>Asleep on battery, using more than this % of a charge per hour counts as high sleep drain (Phase 5).</summary>
+    public double HighSleepDrainPercentPerHour { get; init; } = 1.5;
+
+    /// <summary>A sleep session spending less than this % of its time in hardware deep sleep is reported.</summary>
+    public double MinimumDeepSleepPercent { get; init; } = 80;
+
     /// <summary>Name of the drain thresholds in use, for reports.</summary>
     public string DrainProfileName { get; init; } = MachineClasses.Describe(MachineClass.ThinAndLight);
 

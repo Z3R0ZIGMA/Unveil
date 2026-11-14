@@ -51,6 +51,11 @@ internal static class ConsoleReport
             WriteApps(o, doc, activity);
         }
 
+        if (doc.Admin is { } admin)
+        {
+            WriteAdmin(o, admin);
+        }
+
         WriteNotes(o, s.Log);
 
         Section(o, "SUMMARY (copy into a ticket)");
@@ -124,6 +129,58 @@ internal static class ConsoleReport
             o.WriteLine($"  {name,-34}{Formatting.Percent(app.SharePercent, "0"),7}{Formatting.Percent(app.CpuPercent),8}" +
                         $"{(activity.GpuMeasured ? Formatting.Percent(app.GpuPercent) : "-"),8}{io,11}" +
                         (app.Offender is { } off ? $"  ! {off.Category}" : ""));
+        }
+    }
+
+    private static void WriteAdmin(TextWriter o, Unveil.Core.Admin.AdminData admin)
+    {
+        if (!admin.IsAdministrator)
+        {
+            Section(o, "ADMIN CHECKS");
+            o.WriteLine("  Skipped: energy history, sleep study and energy diagnostics need an elevated prompt.");
+            return;
+        }
+
+        if (admin.Srum?.Last24Hours is { } day)
+        {
+            Section(o, $"ENERGY USE BY APP, LAST 24 HOURS{(day.OnBatteryOnly ? " ON BATTERY" : "")} (SRUM)");
+            o.WriteLine($"  {Formatting.Percent(day.UnassignedPercent, "0")} of the energy could not be assigned to an app and is left out.");
+            o.WriteLine($"  {"App",-44}{"Share",7}  {"Mostly",-8}{"Background",11}");
+            foreach (var app in day.Apps.Take(10))
+            {
+                var name = app.Name.Length > 43 ? app.Name[..42] + "~" : app.Name;
+                o.WriteLine($"  {name,-44}{Formatting.Percent(app.SharePercent, "0"),7}  {app.MainComponent,-8}{Formatting.Percent(app.BackgroundPercent, "0"),11}" +
+                            (app.Offender is { } off ? $"  ! {off.Category}" : ""));
+            }
+        }
+
+        if (admin.Sleep is { } sleep)
+        {
+            Section(o, "SLEEP STUDY");
+            o.WriteLine(sleep.AveragePercentPerHour is { } rate
+                ? $"  Asleep on battery: {Formatting.Percent(rate)} of a charge per hour over {Formatting.Duration(sleep.BatterySleepTime)} ({sleep.BatterySessions.Count} sessions of 30 min or more)"
+                : "  No sleep on battery long enough to judge.");
+            foreach (var s in sleep.Sessions.Reverse().Take(5))
+            {
+                o.WriteLine($"  {Formatting.DateAndTime(s.Start),-17} {Formatting.Duration(s.Duration),8}  {(s.OnAc ? "AC     " : "battery")}" +
+                            $"  {(s.PercentPerHour is { } p ? Formatting.Percent(p) + "/h" : "-"),8}  deep sleep {Formatting.Percent(s.HardwareLowPowerPercent, "0"),4}" +
+                            (s.TopBlockers.FirstOrDefault() is { } b ? $"  awake: {b.Name}" : ""));
+            }
+        }
+
+        if (admin.Energy is { } energy)
+        {
+            Section(o, $"WINDOWS ENERGY DIAGNOSTICS ({energy.ErrorCount} errors, {energy.WarningCount} warnings)");
+            foreach (var f in energy.Findings)
+            {
+                var count = f.Occurrences.Count > 1 ? $" (x{f.Occurrences.Count})" : "";
+                o.WriteLine($"  [{(f.Severity == Unveil.Core.Admin.EnergySeverity.Error ? "error" : "warn ")}] {f.Name}{count}");
+            }
+        }
+
+        foreach (var e in admin.Log.Where(e => e.Level != LogLevel.Info))
+        {
+            o.WriteLine($"  [{e.Level.ToString().ToLowerInvariant()}] {e.Source}: {e.Message}");
         }
     }
 

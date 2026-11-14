@@ -55,6 +55,29 @@ public static class HtmlReportWriter
             AppsTable(html, activity);
         }
 
+        if (doc.Admin is { IsAdministrator: true } admin)
+        {
+            if (admin.Srum?.Last24Hours is { } day)
+            {
+                EnergyWindowTable(html, "Energy use by app: last 24 hours", day);
+            }
+
+            if (admin.Srum?.Last7Days is { } week)
+            {
+                EnergyWindowTable(html, $"Energy use by app: since {Date(week.From)}", week);
+            }
+
+            if (admin.Sleep is { } sleep)
+            {
+                SleepTable(html, sleep);
+            }
+
+            if (admin.Energy is { } energy)
+            {
+                EnergyDiagnosticsList(html, energy);
+            }
+        }
+
         if (s.Report?.CapacityHistory is { Count: > 1 } history)
         {
             CapacityChart(html, history);
@@ -306,6 +329,71 @@ public static class HtmlReportWriter
         }
 
         html.Append("</tbody></table></section>\n");
+    }
+
+    private static void EnergyWindowTable(StringBuilder html, string heading, Admin.EnergyWindow window)
+    {
+        html.Append($"<section class=\"card\"><h2>{E(heading)}</h2>");
+        html.Append($"<p class=\"muted\">From Windows' energy history{(window.OnBatteryOnly ? ", time on battery only" : " (the laptop was not on battery in this period)")}. " +
+                    $"{E(Percent(window.UnassignedPercent, "0"))} of the energy could not be assigned to an app and is not included.</p>");
+        html.Append("<table class=\"data apps\"><thead><tr><th>App</th><th class=\"num\">Share</th><th class=\"bar-col\"></th><th>Mostly</th><th class=\"num\">In background</th></tr></thead><tbody>\n");
+        foreach (var app in window.Apps)
+        {
+            var note = app.Offender is { } o ? $"<div class=\"note sev-warning\"><span class=\"dot\" aria-hidden=\"true\">!</span>{E(o.Category)}</div>" : "";
+            html.Append($"<tr><td>{E(app.Name)}{note}</td><td class=\"num\">{E(Percent(app.SharePercent, "0"))}</td>" +
+                        $"<td class=\"bar-col\"><div class=\"bar\"><span style=\"width:{Math.Clamp(app.SharePercent, 0, 100).ToString("0.#", Inv)}%\"></span></div></td>" +
+                        $"<td>{E(app.MainComponent)}</td><td class=\"num\">{E(Percent(app.BackgroundPercent, "0"))}</td></tr>\n");
+        }
+
+        html.Append("</tbody></table></section>\n");
+    }
+
+    private static void SleepTable(StringBuilder html, Admin.SleepStudy sleep)
+    {
+        html.Append("<section class=\"card\"><h2>Sleep (Modern Standby)</h2>");
+        html.Append(sleep.AveragePercentPerHour is { } rate
+            ? $"<p class=\"muted\">On battery it used {E(Percent(rate))} of a charge per hour while asleep, over {E(Duration(sleep.BatterySleepTime))}. Deep sleep is the share of time in the lowest hardware power state; higher is better.</p>"
+            : "<p class=\"muted\">No sleep on battery long enough to judge in the sleep study period.</p>");
+        if (sleep.Sessions.Count == 0)
+        {
+            html.Append("</section>\n");
+            return;
+        }
+
+        html.Append("<table class=\"data\"><thead><tr><th>Started</th><th class=\"num\">Length</th><th>Power</th><th class=\"num\">Used</th>" +
+                    "<th class=\"num\">Per hour</th><th class=\"num\">Deep sleep</th><th>Kept awake most by</th></tr></thead><tbody>\n");
+        foreach (var s in sleep.Sessions.Reverse().Take(20))
+        {
+            var top = s.TopBlockers.FirstOrDefault();
+            html.Append($"<tr><td>{E(DateAndTime(s.Start))}</td><td class=\"num\">{E(Duration(s.Duration))}</td><td>{(s.OnAc ? "Plugged in" : "Battery")}</td>" +
+                        $"<td class=\"num\">{E(s.EnergyUsed is { } u ? Number(u) + " mWh" : "-")}</td>" +
+                        $"<td class=\"num\">{E(s.PercentPerHour is { } pph ? Percent(pph) : "-")}</td>" +
+                        $"<td class=\"num\">{E(Percent(s.HardwareLowPowerPercent, "0"))}</td><td>{E(top?.Name ?? "-")}</td></tr>\n");
+        }
+
+        html.Append("</tbody></table></section>\n");
+    }
+
+    private static void EnergyDiagnosticsList(StringBuilder html, Admin.EnergyDiagnostics energy)
+    {
+        html.Append("<section class=\"card\"><h2>Windows energy diagnostics</h2>");
+        html.Append($"<p class=\"muted\">{energy.ErrorCount} errors, {energy.WarningCount} warnings and {energy.InformationalCount} informational items " +
+                    $"over {E(Duration(energy.Duration))}. Errors and warnings are listed; repeated items are grouped.</p><ul class=\"evidence\">");
+        foreach (var f in energy.Findings)
+        {
+            var severity = f.Severity == Admin.EnergySeverity.Error ? Severity.Danger : Severity.Warning;
+            var detail = f.Occurrences.Count switch
+            {
+                0 => "",
+                1 => string.Join(", ", f.Occurrences[0].Take(2).Select(kv => $"{kv.Key}: {kv.Value}")),
+                _ => $"{f.Occurrences.Count} times: " + string.Join(", ", f.Occurrences.Take(6).Select(o => o.FirstOrDefault().Value).Where(v => !string.IsNullOrEmpty(v))),
+            };
+            html.Append($"<li class=\"{SevClass(severity)}\"><span class=\"dot\" aria-hidden=\"true\">{Icon(severity)}</span>" +
+                        $"<span class=\"sr\">{SevLabel(severity)}: </span><span><strong>{E(f.Name)}</strong>. {E(f.Description)}" +
+                        (detail.Length > 0 ? $" <span class=\"muted\">({E(detail)})</span>" : "") + "</span></li>\n");
+        }
+
+        html.Append("</ul></section>\n");
     }
 
     private static string Rate(double bytesPerSecond) => bytesPerSecond switch

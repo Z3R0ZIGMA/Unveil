@@ -46,6 +46,11 @@ public static class TextSummary
             sb.AppendLine($"Drain test: {draw}{apps}");
         }
 
+        if (doc.Admin?.Sleep is { AveragePercentPerHour: { } sleepRate } sleep)
+        {
+            sb.AppendLine($"Sleep: {Percent(sleepRate)} of a charge per hour on battery ({sleep.BatterySessions.Count} sessions, {Duration(sleep.BatterySleepTime)})");
+        }
+
         sb.Append($"Actions: {string.Join(" ", v.Actions)}");
         return sb.ToString();
     }

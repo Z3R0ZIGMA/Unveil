@@ -1,5 +1,7 @@
 ﻿using System.Diagnostics;
 using Unveil.Cli;
+using Unveil.Core;
+using Unveil.Core.Admin;
 using Unveil.Core.Battery;
 using Unveil.Core.Power;
 using Unveil.Core.Reports;
@@ -60,7 +62,22 @@ static int Run(string[] args)
             test = RunDrainTest(seconds);
         }
 
-        var report = ReportDocument.Create(snapshot, test, settings);
+        AdminData? admin = null;
+        if (options.AdminChecks && snapshot.HasBattery)
+        {
+            Console.WriteLine();
+            Console.WriteLine(AdminCollector.IsAdministrator()
+                ? $"ADMIN CHECKS: energy history, sleep study{(options.EnergySeconds > 0 ? $" and {options.EnergySeconds} s of energy diagnostics (leave the laptop idle)" : "")}..."
+                : "ADMIN CHECKS: skipped (run from an elevated command prompt to include them).");
+            admin = new AdminCollector().Collect(new AdminOptions
+            {
+                IncludeEnergyDiagnostics = options.EnergySeconds > 0,
+                EnergyDuration = TimeSpan.FromSeconds(options.EnergySeconds),
+                KeepRaw = options.SaveReportFolder is not null,
+            }, new CollectionLog());
+        }
+
+        var report = ReportDocument.Create(snapshot, test, settings, admin: admin);
         ConsoleReport.Write(Console.Out, report);
 
         if (options.OutFolder is not null)
@@ -70,7 +87,7 @@ static int Run(string[] args)
 
         if (options.SaveReportFolder is not null)
         {
-            TryWrite(() => SampleWriter.Save(options.SaveReportFolder, snapshot, Console.Out), options.SaveReportFolder);
+            TryWrite(() => SampleWriter.Save(options.SaveReportFolder, snapshot, Console.Out, admin), options.SaveReportFolder);
         }
 
         return report.Verdict.ExitCode;

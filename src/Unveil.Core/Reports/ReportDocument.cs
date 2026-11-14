@@ -1,4 +1,5 @@
 using System.Reflection;
+using Unveil.Core.Admin;
 using Unveil.Core.Battery;
 using Unveil.Core.Power;
 using Unveil.Core.Verdict;
@@ -33,22 +34,27 @@ public sealed record ReportDocument
     /// <summary>Which drain thresholds were used, e.g. "Thin and light laptop".</summary>
     public string? DrainProfile { get; init; }
 
+    /// <summary>Administrator-only checks (energy history, sleep study, energy diagnostics); null when not attempted.</summary>
+    public AdminData? Admin { get; init; }
+
     public static ReportDocument Create(
         BatterySnapshot snapshot,
         DrainTestResult? test = null,
         VerdictSettings? settings = null,
-        DateTimeOffset? generatedAt = null)
+        DateTimeOffset? generatedAt = null,
+        AdminData? admin = null)
     {
         settings ??= VerdictSettings.Default;
         return new ReportDocument
         {
             GeneratedAt = generatedAt ?? DateTimeOffset.Now,
             Snapshot = snapshot,
-            Verdict = VerdictEngine.Evaluate(snapshot, test?.Measurement, settings),
+            Verdict = VerdictEngine.Evaluate(snapshot, test?.Measurement, settings, admin),
             Usage = UsageAnalyzer.Summarize(snapshot.Report),
             Drain = test?.Measurement,
             Activity = test?.Activity,
             DrainProfile = test is null ? null : settings.DrainProfileName,
+            Admin = admin,
         };
     }
 

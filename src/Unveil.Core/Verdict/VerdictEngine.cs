@@ -1,3 +1,4 @@
+using Unveil.Core.Admin;
 using Unveil.Core.Battery;
 using static Unveil.Core.Formatting;
 
@@ -22,7 +23,11 @@ public static class VerdictEngine
         };
     }
 
-    public static Verdict Evaluate(BatterySnapshot snapshot, DrainMeasurement? drain = null, VerdictSettings? settings = null)
+    public static Verdict Evaluate(
+        BatterySnapshot snapshot,
+        DrainMeasurement? drain = null,
+        VerdictSettings? settings = null,
+        AdminData? admin = null)
     {
         settings ??= VerdictSettings.Default;
 
@@ -34,9 +39,121 @@ public static class VerdictEngine
         var evidence = new List<Finding>();
         var battery = AssessBattery(snapshot, settings, evidence);
         var drainResult = AssessDrain(drain, settings, evidence);
+        var adminResult = AssessAdmin(admin, settings, evidence);
+
+        // High drain while asleep is software/driver drain too ("it's dead in the morning").
+        if (adminResult.SleepCause is { } sleepCause)
+        {
+            drainResult = drainResult with
+            {
+                Status = drainResult.Status is DrainStatus.High ? DrainStatus.High : DrainStatus.Elevated,
+                Cause = drainResult.Cause is null ? sleepCause : $"{drainResult.Cause}, and {sleepCause}",
+            };
+        }
+
         AddContext(snapshot, evidence);
 
-        return Combine(snapshot, battery, drainResult, settings, evidence);
+        return Combine(snapshot, battery, drainResult, settings, evidence, adminResult.Actions);
+    }
+
+    // ---------------------------------------------------------------- admin checks (Phase 5)
+
+    private sealed record AdminAssessment(string? SleepCause, IReadOnlyList<string> Actions);
+
+    private static AdminAssessment AssessAdmin(AdminData? admin, VerdictSettings settings, List<Finding> evidence)
+    {
+        var actions = new List<string>();
+        if (admin is null)
+        {
+            return new AdminAssessment(null, actions);
+        }
+
+        if (!admin.IsAdministrator)
+        {
+            evidence.Add(new Finding(Severity.Neutral,
+                "Energy history, sleep study and energy diagnostics were skipped: they need administrator rights."));
+            return new AdminAssessment(null, actions);
+        }
+
+        string? sleepCause = null;
+        if (admin.Sleep is { } sleep)
+        {
+            var sessions = sleep.BatterySessions;
+            if (sleep.AveragePercentPerHour is { } rate)
+            {
+                var high = rate > settings.HighSleepDrainPercentPerHour;
+                evidence.Add(new Finding(high ? Severity.Warning : Severity.Good,
+                    $"While asleep on battery ({sessions.Count} session{(sessions.Count == 1 ? "" : "s")}, {Duration(sleep.BatterySleepTime)}) " +
+                    $"it used {Percent(rate)} of a charge per hour" +
+                    (high ? $"; above {Percent(settings.HighSleepDrainPercentPerHour)}, a full battery is empty after about {Math.Round(100 / rate):0} hours asleep." : ".")));
+                if (high)
+                {
+                    sleepCause = $"losing {Percent(rate)} of a charge per hour while asleep";
+                }
+            }
+            else
+            {
+                evidence.Add(new Finding(Severity.Neutral, "Sleep study: no sleep on battery long enough to judge in the last few days."));
+            }
+
+            var shallow = sessions
+                .Where(s => s.HardwareLowPowerPercent < settings.MinimumDeepSleepPercent)
+                .OrderBy(s => s.HardwareLowPowerPercent)
+                .FirstOrDefault();
+            var blocker = (shallow ?? sessions.OrderByDescending(s => s.PercentPerHour).FirstOrDefault())?.TopBlockers.FirstOrDefault();
+            if (shallow is not null)
+            {
+                evidence.Add(new Finding(Severity.Warning,
+                    $"During sleep on {Date(shallow.Start)} the laptop was in deep sleep only {Percent(shallow.HardwareLowPowerPercent, "0")} of the time" +
+                    (blocker is null ? "." : $"; it was kept awake mostly by {blocker.Name}.")));
+            }
+
+            if ((sleepCause is not null || shallow is not null) && blocker is not null)
+            {
+                actions.Add($"Check what keeps the laptop awake while asleep: {blocker.Name}. Update its driver or change its power setting.");
+            }
+        }
+
+        if (admin.Energy is { } energy)
+        {
+            evidence.Add(new Finding(energy.ErrorCount > 0 ? Severity.Warning : Severity.Good,
+                $"Windows energy diagnostics found {energy.ErrorCount} error{(energy.ErrorCount == 1 ? "" : "s")} and {energy.WarningCount} warning{(energy.WarningCount == 1 ? "" : "s")}."));
+
+            if (energy.Find(EnergyDiagnostics.Known.DisplayTimeoutDisabledOnBattery) is not null)
+            {
+                evidence.Add(new Finding(Severity.Warning, "On battery the screen is set to never turn off by itself."));
+                actions.Add("Set the screen to turn off after a few minutes on battery (it is set to never turn off).");
+            }
+
+            if (energy.Find(EnergyDiagnostics.Known.SleepTimeoutDisabledOnBattery) is not null)
+            {
+                evidence.Add(new Finding(Severity.Warning, "On battery the laptop is set to never go to sleep by itself."));
+                actions.Add("Set the laptop to sleep after some minutes of inactivity on battery (it is set to never sleep).");
+            }
+
+            if (energy.Find(EnergyDiagnostics.Known.UsbNotSuspending) is { } usb)
+            {
+                var devices = usb.Occurrences.Select(o => o.FirstOrDefault().Value).Where(v => !string.IsNullOrEmpty(v)).Distinct().ToList();
+                var names = devices.Count > 0 ? string.Join(", ", devices) : "a USB device";
+                evidence.Add(new Finding(Severity.Warning, $"USB power saving is blocked by: {names}."));
+                actions.Add($"Unplug {names} when on battery, or update its driver: it stops the processor saving power.");
+            }
+        }
+
+        if (admin.Srum?.Last24Hours is { Apps.Count: > 0 } day)
+        {
+            evidence.Add(new Finding(Severity.Neutral,
+                $"Over the last 24 hours{(day.OnBatteryOnly ? " on battery" : "")}, most app energy went to: " +
+                string.Join(", ", day.Apps.Take(3).Select(a => $"{a.Name} ({Percent(a.SharePercent, "0")})")) + "."));
+
+            foreach (var app in day.Apps.Where(a => a.Offender is not null && a.SharePercent >= 10).Take(2))
+            {
+                evidence.Add(new Finding(Severity.Warning, $"{app.Name} ({app.Offender!.Category}) used {Percent(app.SharePercent, "0")} of app energy in the last 24 hours."));
+                actions.Add($"{app.Name} used {Percent(app.SharePercent, "0")} of app energy in the last 24 hours: {app.Offender.Advice}");
+            }
+        }
+
+        return new AdminAssessment(sleepCause, actions);
     }
 
     // ---------------------------------------------------------------- battery
@@ -236,7 +353,8 @@ public static class VerdictEngine
         BatteryAssessment battery,
         DrainAssessment drain,
         VerdictSettings settings,
-        List<Finding> evidence)
+        List<Finding> evidence,
+        IReadOnlyList<string> adminActions)
     {
         var actions = new List<string>();
         var drainBad = drain.Status is DrainStatus.Elevated or DrainStatus.High;
@@ -349,7 +467,13 @@ public static class VerdictEngine
                 }
             }
         }
-        else if (drain.Status == DrainStatus.NotTested)
+
+        foreach (var action in adminActions.Where(a => !actions.Contains(a)))
+        {
+            actions.Add(action);
+        }
+
+        if (drain.Measurement is null)
         {
             actions.Add("Run the full test (unplugged, 60 seconds) to check for software drain.");
         }

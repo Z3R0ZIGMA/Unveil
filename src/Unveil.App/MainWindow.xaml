@@ -40,6 +40,14 @@
                 <!-- ============================================ toolbar -->
                 <DockPanel Margin="0,0,0,14" LastChildFill="True">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Command="{Binding RestartAsAdminCommand}" Margin="0,0,8,0"
+                                Visibility="{Binding IsAdministrator, Converter={StaticResource BoolToVis}, ConverterParameter=invert}"
+                                ToolTip="Adds energy use by app over recent days, the sleep study and Windows energy diagnostics">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource IconText}" Text="&#xE7EF;" Margin="0,0,8,0" />
+                                <TextBlock Text="Restart as administrator" />
+                            </StackPanel>
+                        </Button>
                         <Button Content="Copy summary" Command="{Binding CopySummaryCommand}" Margin="0,0,8,0"
                                 ToolTip="Copy a short plain-text summary for a ticket" />
                         <Button Content="Export report" Command="{Binding ExportCommand}" Margin="0,0,8,0"
@@ -305,7 +313,7 @@
                                 </StackPanel>
                                 <TextBlock Text="Apps using the most power" Style="{StaticResource HeadingText}" />
                             </DockPanel>
-                            <TabControl>
+                            <TabControl x:Name="PowerTabs">
                                 <TabItem Header="Live test">
                                     <StackPanel>
                                         <!-- Before the test -->
@@ -415,7 +423,202 @@
                                         </StackPanel>
                                     </StackPanel>
                                 </TabItem>
+                                <TabItem Header="Last 24 hours">
+                                    <StackPanel>
+                                        <DockPanel Visibility="{Binding HasSrum, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+                                            <Button DockPanel.Dock="Right" Command="{Binding RestartAsAdminCommand}" Content="Restart as administrator" VerticalAlignment="Center"
+                                                    Visibility="{Binding IsAdministrator, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                                            <TextBlock Text="{Binding AdminHint}" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                        </DockPanel>
+                                        <StackPanel Visibility="{Binding HasSrum, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding SrumDaySummary}" Style="{StaticResource MutedText}" Margin="0,0,0,10" />
+                                            <Grid Margin="8,0,8,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="28" />
+                                                    <ColumnDefinition Width="3*" />
+                                                    <ColumnDefinition Width="2*" />
+                                                    <ColumnDefinition Width="90" />
+                                                    <ColumnDefinition Width="110" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="1" Text="App" Style="{StaticResource MutedText}" />
+                                                <TextBlock Grid.Column="2" Text="Share of app energy" Style="{StaticResource MutedText}" />
+                                                <TextBlock Grid.Column="3" Text="Mostly" Style="{StaticResource MutedText}" />
+                                                <TextBlock Grid.Column="4" Text="In background" Style="{StaticResource MutedText}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Border BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" />
+                                            <ItemsControl ItemsSource="{Binding SrumDay}">
+                                                <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:SrumRow}">
+                                                    <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Padding="8,6" ToolTip="{Binding Advice}">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="28" />
+                                                                <ColumnDefinition Width="3*" />
+                                                                <ColumnDefinition Width="2*" />
+                                                                <ColumnDefinition Width="90" />
+                                                                <ColumnDefinition Width="110" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Rank}" Style="{StaticResource MutedText}" VerticalAlignment="Center" />
+                                                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                                                <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding Category, Converter={StaticResource NullToCollapsed}}">
+                                                                    <Grid Width="14" Height="14" Margin="0,0,5,0">
+                                                                        <Ellipse Fill="{StaticResource Warning}" />
+                                                                        <TextBlock Style="{StaticResource IconText}" FontSize="8" Foreground="{StaticResource Window}" Text="&#xE7BA;" />
+                                                                    </Grid>
+                                                                    <TextBlock Text="{Binding Category}" Style="{StaticResource MutedText}" FontSize="12" />
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                            <DockPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding ShareText}" Width="42" TextAlignment="Right" FontWeight="SemiBold" />
+                                                                <ProgressBar Value="{Binding Share, Mode=OneWay}" Maximum="100" Margin="0,0,10,0" />
+                                                            </DockPanel>
+                                                            <TextBlock Grid.Column="3" Text="{Binding Mostly}" VerticalAlignment="Center" />
+                                                            <TextBlock Grid.Column="4" Text="{Binding BackgroundText}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem Header="{Binding SrumWeekHeader}">
+                                    <StackPanel>
+                                        <DockPanel Visibility="{Binding HasSrum, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+                                            <Button DockPanel.Dock="Right" Command="{Binding RestartAsAdminCommand}" Content="Restart as administrator" VerticalAlignment="Center"
+                                                    Visibility="{Binding IsAdministrator, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                                            <TextBlock Text="{Binding AdminHint}" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                        </DockPanel>
+                                        <StackPanel Visibility="{Binding HasSrum, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding SrumWeekSummary}" Style="{StaticResource MutedText}" Margin="0,0,0,10" />
+                                            <Grid Margin="8,0,8,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="28" />
+                                                    <ColumnDefinition Width="3*" />
+                                                    <ColumnDefinition Width="2*" />
+                                                    <ColumnDefinition Width="90" />
+                                                    <ColumnDefinition Width="110" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="1" Text="App" Style="{StaticResource MutedText}" />
+                                                <TextBlock Grid.Column="2" Text="Share of app energy" Style="{StaticResource MutedText}" />
+                                                <TextBlock Grid.Column="3" Text="Mostly" Style="{StaticResource MutedText}" />
+                                                <TextBlock Grid.Column="4" Text="In background" Style="{StaticResource MutedText}" HorizontalAlignment="Right" />
+                                            </Grid>
+                                            <Border BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" />
+                                            <ItemsControl ItemsSource="{Binding SrumWeek}">
+                                                <ItemsControl.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type vm:SrumRow}">
+                                                    <Border BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Padding="8,6" ToolTip="{Binding Advice}">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="28" />
+                                                                <ColumnDefinition Width="3*" />
+                                                                <ColumnDefinition Width="2*" />
+                                                                <ColumnDefinition Width="90" />
+                                                                <ColumnDefinition Width="110" />
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Text="{Binding Rank}" Style="{StaticResource MutedText}" VerticalAlignment="Center" />
+                                                            <StackPanel Grid.Column="1" Margin="0,0,12,0">
+                                                                <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
+                                                                <StackPanel Orientation="Horizontal" Visibility="{Binding Category, Converter={StaticResource NullToCollapsed}}">
+                                                                    <Grid Width="14" Height="14" Margin="0,0,5,0">
+                                                                        <Ellipse Fill="{StaticResource Warning}" />
+                                                                        <TextBlock Style="{StaticResource IconText}" FontSize="8" Foreground="{StaticResource Window}" Text="&#xE7BA;" />
+                                                                    </Grid>
+                                                                    <TextBlock Text="{Binding Category}" Style="{StaticResource MutedText}" FontSize="12" />
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                            <DockPanel Grid.Column="2" VerticalAlignment="Center" Margin="0,0,12,0">
+                                                                <TextBlock DockPanel.Dock="Right" Text="{Binding ShareText}" Width="42" TextAlignment="Right" FontWeight="SemiBold" />
+                                                                <ProgressBar Value="{Binding Share, Mode=OneWay}" Maximum="100" Margin="0,0,10,0" />
+                                                            </DockPanel>
+                                                            <TextBlock Grid.Column="3" Text="{Binding Mostly}" VerticalAlignment="Center" />
+                                                            <TextBlock Grid.Column="4" Text="{Binding BackgroundText}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </TabItem>
+                                <TabItem Header="Asleep">
+                                    <StackPanel>
+                                        <DockPanel Visibility="{Binding HasSleep, Converter={StaticResource BoolToVis}, ConverterParameter=invert}">
+                                            <Button DockPanel.Dock="Right" Command="{Binding RestartAsAdminCommand}" Content="Restart as administrator" VerticalAlignment="Center"
+                                                    Visibility="{Binding IsAdministrator, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                                            <TextBlock Text="{Binding AdminHint}" Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                                        </DockPanel>
+                                        <StackPanel Visibility="{Binding HasSleep, Converter={StaticResource BoolToVis}}">
+                                            <TextBlock Text="{Binding SleepSummary}" Style="{StaticResource MutedText}" Margin="0,0,0,10" />
+                                            <DataGrid ItemsSource="{Binding SleepRows}" MaxHeight="320">
+                                                <DataGrid.Columns>
+                                                    <DataGridTextColumn Header="Started" Binding="{Binding Start}" Width="140" />
+                                                    <DataGridTextColumn Header="Length" Binding="{Binding Length}" Width="80"
+                                                                        CellStyle="{StaticResource NumberCell}" HeaderStyle="{StaticResource NumberHeader}" />
+                                                    <DataGridTextColumn Header="Power" Binding="{Binding Power}" Width="90" />
+                                                    <DataGridTextColumn Header="Used" Binding="{Binding Used}" Width="90"
+                                                                        CellStyle="{StaticResource NumberCell}" HeaderStyle="{StaticResource NumberHeader}" />
+                                                    <DataGridTextColumn Header="Per hour" Binding="{Binding PerHour}" Width="80"
+                                                                        CellStyle="{StaticResource NumberCell}" HeaderStyle="{StaticResource NumberHeader}" />
+                                                    <DataGridTextColumn Header="Deep sleep" Binding="{Binding DeepSleep}" Width="90"
+                                                                        CellStyle="{StaticResource NumberCell}" HeaderStyle="{StaticResource NumberHeader}" />
+                                                    <DataGridTextColumn Header="Kept awake most by" Binding="{Binding Blocker}" Width="*" />
+                                                </DataGrid.Columns>
+                                            </DataGrid>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </TabItem>
                             </TabControl>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- ============================================ energy diagnostics (admin) -->
+                    <Border Style="{StaticResource Card}" Visibility="{Binding HasBattery, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,6">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                    <Button Command="{Binding RunEnergyCommand}" Content="Run energy diagnostics (60 s)"
+                                            Visibility="{Binding IsAdministrator, Converter={StaticResource BoolToVis}}"
+                                            ToolTip="Runs Windows' own 60-second power check (powercfg /energy)" />
+                                    <Button Command="{Binding RestartAsAdminCommand}" Content="Restart as administrator"
+                                            Visibility="{Binding IsAdministrator, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+                                </StackPanel>
+                                <TextBlock Text="Windows energy diagnostics" Style="{StaticResource HeadingText}" Margin="0" VerticalAlignment="Center" />
+                            </DockPanel>
+                            <TextBlock Text="{Binding EnergyRunText}" Style="{StaticResource BodyText}" Margin="0,0,0,6"
+                                       Visibility="{Binding EnergyRunning, Converter={StaticResource BoolToVis}}" />
+                            <TextBlock Style="{StaticResource MutedText}"
+                                       Visibility="{Binding HasEnergy, Converter={StaticResource BoolToVis}, ConverterParameter=invert}"
+                                       Text="Windows can check for power problems such as USB devices that never sleep, screens set to never turn off and drivers that block power saving. It takes 60 seconds and needs administrator rights." />
+                            <StackPanel Visibility="{Binding HasEnergy, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding EnergySummary}" Style="{StaticResource MutedText}" Margin="0,0,0,8" />
+                                <ItemsControl ItemsSource="{Binding EnergyFindings}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type vm:EnergyFindingRow}">
+                                            <Grid Margin="0,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="28" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Grid Width="18" Height="18" VerticalAlignment="Top" HorizontalAlignment="Left" Margin="0,1,0,0"
+                                                      ToolTip="{Binding Severity, Converter={StaticResource SeverityLabel}}">
+                                                    <Ellipse Fill="{Binding Severity, Converter={StaticResource SeverityBrush}}" />
+                                                    <TextBlock Style="{StaticResource IconText}" FontSize="10" Foreground="{StaticResource Window}"
+                                                               Text="{Binding Severity, Converter={StaticResource SeverityGlyph}}" />
+                                                </Grid>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Style="{StaticResource BodyText}" />
+                                                    <TextBlock Text="{Binding Description}" Style="{StaticResource MutedText}" />
+                                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource MutedText}" FontSize="12"
+                                                               Visibility="{Binding Detail, Converter={StaticResource NullToCollapsed}}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
