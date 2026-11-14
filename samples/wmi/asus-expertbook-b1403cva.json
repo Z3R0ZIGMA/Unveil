@@ -1,0 +1,39 @@
+{
+  "IsAdministrator": false,
+  "System": {
+    "Manufacturer": "ASUSTeK COMPUTER INC.",
+    "Model": "ASUS EXPERTBOOK B1403CVA",
+    "ProductVersion": "1.0",
+    "SystemFamily": "ASUS EXPERTBOOK",
+    "SerialNumber": "REDACTED",
+    "BiosVersion": "B1403CVA.345",
+    "PcSystemType": 2,
+    "DisplayModel": "ASUS EXPERTBOOK B1403CVA",
+    "PcSystemTypeName": "Laptop / mobile"
+  },
+  "Batteries": [
+    {
+      "InstanceName": "ACPI\\PNP0C0A\\0_0",
+      "StaticDataAvailable": true,
+      "ManufactureName": "ASUSTeK",
+      "DeviceName": "ASUS Battery",
+      "SerialNumber": null,
+      "UniqueId": "REDACTED",
+      "Chemistry": "LIon",
+      "ManufactureDate": null,
+      "DesignedCapacity": 42067,
+      "Capabilities": 2147483648,
+      "FullChargedCapacity": 36628,
+      "CycleCount": 242,
+      "RemainingCapacity": 36628,
+      "Voltage": 12866,
+      "ChargeRate": 0,
+      "DischargeRate": 0,
+      "PowerOnline": true,
+      "Charging": false,
+      "Discharging": false,
+      "Critical": false
+    }
+  ],
+  "Log": []
+}

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic: almost everything missing or malformed. Must parse without throwing. -->
+<BatteryReport xmlns="http://schemas.microsoft.com/battery/2012">
+  <Batteries>
+    <Battery>
+      <Id>  </Id>
+      <DesignCapacity>not-a-number</DesignCapacity>
+      <FullChargeCapacity></FullChargeCapacity>
+    </Battery>
+  </Batteries>
+  <RuntimeEstimates>
+    <FullChargeCapacity><ActiveRuntime>garbage</ActiveRuntime></FullChargeCapacity>
+  </RuntimeEstimates>
+  <RecentUsage>
+    <UsageEntry Timestamp="bad-date" Duration="-5" Ac="1" EntryType="Active" />
+  </RecentUsage>
+  <History>
+    <HistoryEntry StartDate="" FullChargeCapacity="x" />
+  </History>
+  <EnergyDrains>
+    <Drain StartTimestamp="2026-10-01T10:00:00Z" EndTimestamp="2026-10-01T09:00:00Z" StartChargeCapacity="100" EndChargeCapacity="50" />
+  </EnergyDrains>
+</BatteryReport>

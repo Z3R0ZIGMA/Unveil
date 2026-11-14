@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic: battery reporting relative capacity (not mWh). -->
+<BatteryReport xmlns="http://schemas.microsoft.com/battery/2012">
+  <SystemInformation><ComputerName>REDACTED</ComputerName><PlatformRole>Slate</PlatformRole></SystemInformation>
+  <Batteries>
+    <Battery>
+      <Id>Tablet Battery</Id>
+      <Chemistry>LIP</Chemistry>
+      <RelativeCapacity>1</RelativeCapacity>
+      <DesignCapacity>100</DesignCapacity>
+      <FullChargeCapacity>45</FullChargeCapacity>
+      <CycleCount></CycleCount>
+    </Battery>
+  </Batteries>
+</BatteryReport>

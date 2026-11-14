@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic: ThinkPad-style machine with an internal and an external battery. Serials are fake. -->
+<BatteryReport xmlns="http://schemas.microsoft.com/battery/2012">
+  <ReportInformation>
+    <ReportGuid>00000000-0000-0000-0000-000000000000</ReportGuid>
+    <ReportVersion>1.1</ReportVersion>
+    <ScanTime>2026-10-01T08:00:00Z</ScanTime>
+  </ReportInformation>
+  <SystemInformation>
+    <ComputerName>REDACTED</ComputerName>
+    <SystemManufacturer>LENOVO</SystemManufacturer>
+    <SystemProductName>20L5S00000</SystemProductName>
+    <BIOSDate>01/01/2024</BIOSDate>
+    <BIOSVersion>N24ET99W (1.74 )</BIOSVersion>
+    <OSBuild>19045.1.amd64fre.vb_release.191206-1406</OSBuild>
+    <PlatformRole>Mobile</PlatformRole>
+    <ConnectedStandby>0</ConnectedStandby>
+  </SystemInformation>
+  <Batteries>
+    <Battery>
+      <Id>01AV489</Id>
+      <Manufacturer>SMP</Manufacturer>
+      <SerialNumber>FAKE-SERIAL-1</SerialNumber>
+      <ManufactureDate>2019-03-12</ManufactureDate>
+      <Chemistry>LiP</Chemistry>
+      <LongTerm>1</LongTerm>
+      <RelativeCapacity>0</RelativeCapacity>
+      <DesignCapacity>24000</DesignCapacity>
+      <FullChargeCapacity>18000</FullChargeCapacity>
+      <CycleCount>412</CycleCount>
+    </Battery>
+    <Battery>
+      <Id>5B10W13930</Id>
+      <Manufacturer>LGC</Manufacturer>
+      <SerialNumber>FAKE-SERIAL-2</SerialNumber>
+      <ManufactureDate></ManufactureDate>
+      <Chemistry>LION</Chemistry>
+      <LongTerm>1</LongTerm>
+      <RelativeCapacity>0</RelativeCapacity>
+      <DesignCapacity>72000</DesignCapacity>
+      <FullChargeCapacity>66000</FullChargeCapacity>
+      <CycleCount>0</CycleCount>
+    </Battery>
+  </Batteries>
+  <RuntimeEstimates>
+    <DesignCapacity><Capacity>96000</Capacity><ActiveRuntime>PT9H30M</ActiveRuntime><ConnectedStandbyRuntime>-</ConnectedStandbyRuntime></DesignCapacity>
+    <FullChargeCapacity><Capacity>84000</Capacity><ActiveRuntime>PT8H20M</ActiveRuntime><ConnectedStandbyRuntime /></FullChargeCapacity>
+  </RuntimeEstimates>
+  <RecentUsage />
+  <History>
+    <HistoryEntry StartDate="2026-09-24T00:00:00Z" EndDate="2026-09-30T23:59:59Z" DesignCapacity="96000" FullChargeCapacity="84000" CycleCount="410" BatteryChanged="0" EstimatedDesignActiveTime="PT9H30M" EstimatedFullChargeActiveTime="PT8H20M" />
+    <HistoryEntry StartDate="2026-09-17T00:00:00Z" EndDate="2026-09-23T23:59:59Z" DesignCapacity="96000" FullChargeCapacity="86000" CycleCount="405" BatteryChanged="1" EstimatedDesignActiveTime="PT9H30M" EstimatedFullChargeActiveTime="PT8H30M" />
+  </History>
+  <EnergyDrains />
+</BatteryReport>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic: cheap replacement battery that reports design capacity 0 and no cycle count. -->
+<BatteryReport xmlns="http://schemas.microsoft.com/battery/2012">
+  <ReportInformation><ReportVersion>1.1</ReportVersion><ScanTime>2026-10-01T08:00:00Z</ScanTime></ReportInformation>
+  <SystemInformation><ComputerName>REDACTED</ComputerName><SystemManufacturer>HP</SystemManufacturer><SystemProductName>HP ProBook 450 G7</SystemProductName><PlatformRole>Mobile</PlatformRole><ConnectedStandby>1</ConnectedStandby></SystemInformation>
+  <Batteries>
+    <Battery>
+      <Id>Generic Battery</Id>
+      <Manufacturer></Manufacturer>
+      <SerialNumber></SerialNumber>
+      <ManufactureDate>3/1/2023</ManufactureDate>
+      <Chemistry>XYZ</Chemistry>
+      <RelativeCapacity>0</RelativeCapacity>
+      <DesignCapacity>0</DesignCapacity>
+      <FullChargeCapacity>41000</FullChargeCapacity>
+      <CycleCount>0</CycleCount>
+    </Battery>
+  </Batteries>
+  <History />
+</BatteryReport>

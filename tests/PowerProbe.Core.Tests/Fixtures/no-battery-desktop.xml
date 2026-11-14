@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Synthetic: desktop / VM. powercfg still writes a report, with no batteries. -->
+<BatteryReport xmlns="http://schemas.microsoft.com/battery/2012">
+  <ReportInformation><ReportVersion>1.1</ReportVersion><ScanTime>2026-10-01T08:00:00Z</ScanTime></ReportInformation>
+  <SystemInformation><ComputerName>REDACTED</ComputerName><SystemManufacturer>Microsoft Corporation</SystemManufacturer><SystemProductName>Virtual Machine</SystemProductName><PlatformRole>Desktop</PlatformRole><ConnectedStandby>0</ConnectedStandby></SystemInformation>
+  <Batteries />
+  <RuntimeEstimates />
+  <RecentUsage />
+  <History />
+  <EnergyDrains />
+</BatteryReport>
