@@ -30,6 +30,11 @@ public static class TextSummary
                           string.Join("; ", s.Batteries.Select(b => $"#{b.Index} {BatteryLine(b)}")));
         }
 
+        if (doc.Comparison is { Match: not ComparisonMatch.NoMatch } comparison)
+        {
+            sb.AppendLine($"Compared: {comparison.Summary}");
+        }
+
         sb.AppendLine($"Verdict: {v.Title.ToUpperInvariant()} - {v.Message}");
 
         if (s.Report?.RuntimeEstimates?.AtFullChargeCapacity?.ActiveRuntime is { } runtime)

@@ -299,6 +299,44 @@
                         </Border>
                     </Grid>
 
+                    <!-- ============================================ comparison with an earlier report (Phase 8) -->
+                    <Border Style="{StaticResource Card}" Visibility="{Binding HasBattery, Converter={StaticResource BoolToVis}}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,4">
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <Button Content="Clear" Command="{Binding ClearComparisonCommand}" Margin="0,0,8,0"
+                                            Visibility="{Binding HasComparison, Converter={StaticResource BoolToVis}}"
+                                            ToolTip="Stop comparing with this report" />
+                                    <Button Content="Compare with a report..." Command="{Binding CompareWithCommand}"
+                                            ToolTip="Choose an earlier Unveil report (.json) for this laptop" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding ComparisonTitle}" Style="{StaticResource HeadingText}" Margin="0,0,0,2" />
+                                    <TextBlock Text="{Binding ComparisonSource}" Style="{StaticResource MutedText}" FontSize="12"
+                                               Visibility="{Binding HasComparison, Converter={StaticResource BoolToVis}}" />
+                                </StackPanel>
+                            </DockPanel>
+
+                            <TextBlock Text="{Binding ComparisonEmptyText}" Style="{StaticResource MutedText}" Margin="0,4,0,0"
+                                       Visibility="{Binding HasComparison, Converter={StaticResource BoolToVis}, ConverterParameter=invert}" />
+
+                            <StackPanel Visibility="{Binding HasComparison, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Text="{Binding ComparisonSummary}" Style="{StaticResource BodyText}" FontWeight="SemiBold" Margin="0,6,0,10" />
+                                <DataGrid ItemsSource="{Binding ComparisonRows}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="" Binding="{Binding Label}" Width="2*" />
+                                        <DataGridTextColumn Header="Then" Binding="{Binding Before}" Width="*"
+                                                            CellStyle="{StaticResource NumberCell}" HeaderStyle="{StaticResource NumberHeader}" />
+                                        <DataGridTextColumn Header="Now" Binding="{Binding Now}" Width="*"
+                                                            CellStyle="{StaticResource NumberCell}" HeaderStyle="{StaticResource NumberHeader}" />
+                                        <DataGridTextColumn Header="Change" Binding="{Binding Change}" Width="*"
+                                                            CellStyle="{StaticResource NumberCell}" HeaderStyle="{StaticResource NumberHeader}" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBlock Text="{Binding ComparisonNotes}" Style="{StaticResource MutedText}" FontSize="12" Margin="0,8,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
                     <!-- ============================================ power settings (Phase 6) -->
                     <Border Style="{StaticResource Card}" Visibility="{Binding HasSettings, Converter={StaticResource BoolToVis}}">

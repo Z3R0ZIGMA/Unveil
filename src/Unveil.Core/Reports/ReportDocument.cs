@@ -44,6 +44,9 @@ public sealed record ReportDocument
     /// <summary>The settings checks and advice built from <see cref="PowerSettings"/>.</summary>
     public IReadOnlyList<SettingCheck> SettingChecks { get; init; } = [];
 
+    /// <summary>The change since an earlier report for this laptop (Phase 8); null when there is none to compare with.</summary>
+    public ReportComparison? Comparison { get; init; }
+
     public static ReportDocument Create(
         BatterySnapshot snapshot,
         DrainTestResult? test = null,

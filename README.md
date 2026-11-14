@@ -4,7 +4,7 @@
 Portable Windows app for technicians: run it on a client's laptop to find out whether the battery is worn out or
 something on the machine is draining it.
 
-See [plan.md](plan.md) for the full spec (and the changes made since). **Current status: Phase 7 done** (version 0.7.0).
+See [plan.md](plan.md) for the full spec (and the changes made since). **Current status: Phase 8 done** (version 0.8.0).
 
 ## Requirements
 - Windows 10 22H2 or Windows 11 (x64 or ARM64)
@@ -26,6 +26,11 @@ Copy the folder to a USB stick and double-click `Unveil.exe` on the client's lap
   sleep study (drain while asleep and what kept the laptop awake) and **Run energy diagnostics (60 s)**. All read-only.
 - **Export report** saves an HTML report for the customer (printable) and the JSON data. **Copy summary** copies a short
   text summary for the ticket.
+- **Since the last check:** export a report on every visit. Next time, Unveil finds the latest earlier `unveil-*.json`
+  for the same laptop (next to Unveil.exe and up to two subfolders deep, on the Desktop, in Documents or in Downloads)
+  and shows the change in health, full charge capacity, cycles, verdict and test power draw. It matches on the battery
+  serial (or the laptop serial when the battery has none) and spots a replaced battery. **Compare with a report...**
+  picks one by hand. The comparison is also in the HTML report and the ticket summary.
 - **Details > Data notes > Save samples** exports scrubbed raw data (no serials, names, account IDs or Wi-Fi details) so
   new laptop models can be added to the test samples.
 
@@ -60,7 +65,7 @@ src/Unveil.Core/          data collection, parsing, verdict and reports (no UI)
   Power/                  drain test, process sampler, Power Impact scoring, known offenders
   Admin/                  SRUM, sleep study and energy diagnostics parsers, admin collector, sample export and scrubber
   Config/                 unveil.json model, loader and validation
-  Reports/                JSON export, HTML report, copy-to-ticket summary
+  Reports/                JSON export, HTML report, copy-to-ticket summary, comparison with an earlier report
 src/Unveil.App/           Unveil.exe: WPF app (MVVM), Themes/Theme.xaml, Controls/ (gauge, chart, sparkline)
 build/publish.ps1         release build into dist/
 assets/                   app icon and the script that draws it (make_icon.py)

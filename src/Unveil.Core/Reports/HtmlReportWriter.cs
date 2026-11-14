@@ -46,6 +46,11 @@ public static class HtmlReportWriter
             KeyFigures(html, doc);
         }
 
+        if (doc.Comparison is { Match: not ComparisonMatch.NoMatch } comparison)
+        {
+            ComparisonTable(html, comparison);
+        }
+
         List(html, "What to do", "actions", v.Actions.Select(a => (Severity.Neutral, a)), numbered: true);
         List(html, "Why", "evidence", v.Evidence.Select(f => (f.Severity, f.Text)), numbered: false);
 
@@ -327,6 +332,27 @@ public static class HtmlReportWriter
         }
 
         html.Append("</tbody></table></section>\n");
+    }
+
+    private static void ComparisonTable(StringBuilder html, ReportComparison c)
+    {
+        html.Append($"<section class=\"card\"><h2>Compared with the report from {E(Date(c.PreviousGeneratedAt))}</h2>");
+        html.Append($"<p>{E(c.Summary)}</p>");
+        html.Append("<table class=\"data compare\"><thead><tr><th></th>" +
+                    $"<th class=\"num\">{E(Date(c.PreviousGeneratedAt))}</th><th class=\"num\">Now</th><th class=\"num\">Change</th></tr></thead><tbody>\n");
+        foreach (var row in c.Rows())
+        {
+            html.Append($"<tr><td>{E(row.Label)}</td><td class=\"num\">{E(row.Before)}</td><td class=\"num\">{E(row.Now)}</td>" +
+                        $"<td class=\"num\">{E(row.Change)}</td></tr>\n");
+        }
+
+        html.Append("</tbody></table>");
+        foreach (var note in c.Notes)
+        {
+            html.Append($"<p class=\"muted small\">{E(note)}</p>");
+        }
+
+        html.Append("</section>\n");
     }
 
     private static void SettingsTable(StringBuilder html, IReadOnlyList<SystemInfo.SettingCheck> checks)

@@ -25,6 +25,9 @@ public interface IUiServices
 
     /// <summary>Shows a folder picker. Returns the folder, or null if cancelled.</summary>
     string? PickFolder(string title);
+
+    /// <summary>Shows an open-file dialog. Returns the chosen file, or null if cancelled.</summary>
+    string? PickOpenPath(string title, string filter);
 }
 
 public sealed record FindingItem(Severity Severity, string Text);
@@ -61,6 +64,7 @@ public sealed partial class MainViewModel : ObservableObject
         _ui = ui;
         InitTest(createTest ?? Unveil.Core.Power.DrainTest.CreateDefault);
         InitAdmin();
+        InitCompare();
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy && Stage == TestStage.Idle);
         CopySummaryCommand = new RelayCommand(CopySummary, () => Report is not null);
@@ -232,6 +236,7 @@ public sealed partial class MainViewModel : ObservableObject
             _lastTest = null; // a fresh check makes the old test results stale
             _admin = null;
             var report = ReportDocument.Create(snapshot, null, Settings, powerSettings: _powerSettings, thresholds: _config.Config.ToSettingsThresholds());
+            await FindPreviousOnceAsync(report);
             Apply(report);
             StatusText = $"Checked {report.GeneratedAt.ToString("HH:mm", Inv)} as {(snapshot.IsAdministrator ? "administrator" : "standard user")}";
             await ReadLiveAsync();
@@ -295,6 +300,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     private void Apply(ReportDocument report)
     {
+        report = WithComparison(report);
         Report = report;
         var s = report.Snapshot;
         var v = report.Verdict;
@@ -368,12 +374,17 @@ public sealed partial class MainViewModel : ObservableObject
         ApplyActivity(report);
         ApplyAdmin(report);
         ApplySettings(report);
+        ApplyComparison(report);
         Details = BuildDetails(s);
         var notes = s.Log.Count == 0
             ? new List<string> { "All sources were read without problems." }
             : s.Log.Select(e => $"{e.Level} - {e.Source}: {e.Message}").ToList();
         notes.Add(_config.Path is { } configPath ? $"Settings file: {configPath}" : "Settings file: none (using the defaults).");
         notes.AddRange(_config.Log.Select(e => $"{e.Level} - {e.Source}: {e.Message}"));
+        if (_comparisonSearchNote is { } compareNote)
+        {
+            notes.Add(compareNote);
+        }
         Notes = notes;
     }
 

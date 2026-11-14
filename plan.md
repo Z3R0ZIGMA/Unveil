@@ -12,6 +12,9 @@
 - **Deferred:** code signing (Phase 8). The user will handle it later; until then the release README explains the
   SmartScreen warning.
 - **Kept from section 8:** `unveil.json` for thresholds and extra known offenders.
+- **Comparison (Phase 8):** besides choosing a previous JSON by hand, Unveil finds the latest earlier report for the
+  same laptop on its own, and reports a battery replaced since then. It matches on the laptop serial when the battery
+  has no serial.
 - **Added:** "Save samples" in the app (scrubbed raw data to improve support for new laptop models), power settings
   checks with an idle-apps rule, and RMM/security agents as known battery drainers.
 - **Verdict:** a battery at 60-79% gets a softer "Battery worn" verdict; the 10%-in-30-days drop must be sustained over

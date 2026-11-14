@@ -61,6 +61,12 @@ public partial class MainWindow : Window, IUiServices
         return dialog.ShowDialog(this) == true ? dialog.FolderName : null;
     }
 
+    public string? PickOpenPath(string title, string filter)
+    {
+        var dialog = new OpenFileDialog { Title = title, Filter = filter, CheckFileExists = true };
+        return dialog.ShowDialog(this) == true ? dialog.FileName : null;
+    }
+
     public bool RestartAsAdministrator()
     {
         if (Environment.ProcessPath is not { } exe)
