@@ -2,6 +2,17 @@
 
 *See what's really draining your battery.*
 
+## Changes since the plan (decided during the build)
+
+- **Who uses it:** a technician runs `Unveil.exe` on the client's laptop. There is no RMM or command-line use.
+- **Removed:** CLI mode (section 7, the `--cli` switch, exit codes, `Unveil.Cli.exe`) and report branding (company
+  name/logo/footer in sections 6 and 8). The HTML report always says "Unveil".
+- **Kept from section 8:** `unveil.json` for thresholds and extra known offenders.
+- **Added:** "Save samples" in the app (scrubbed raw data to improve support for new laptop models), power settings
+  checks with an idle-apps rule, and RMM/security agents as known battery drainers.
+- **Verdict:** a battery at 60-79% gets a softer "Battery worn" verdict; the 10%-in-30-days drop must be sustained over
+  the last 3 history entries; "Inconclusive" when health cannot be measured.
+
 ## 1. Purpose
 
 When a customer says "my battery doesn't last anymore", a technician needs to answer one question quickly and with evidence:

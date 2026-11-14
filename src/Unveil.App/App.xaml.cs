@@ -16,7 +16,7 @@ public partial class App : Application
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
 
-        // unveil.json next to the exe: thresholds, laptop type, test length, branding, extra known offenders.
+        // unveil.json next to the exe: thresholds, laptop type, test length, extra known offenders.
         var config = Unveil.Core.Config.ConfigLoader.Load(Unveil.Core.Config.ConfigLoader.ExeFolder);
         config.Config.ApplyKnownOffenders();
 

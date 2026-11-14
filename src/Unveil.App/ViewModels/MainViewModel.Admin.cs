@@ -24,11 +24,15 @@ public sealed partial class MainViewModel
 
     public ICommand RunEnergyCommand { get; private set; } = null!;
 
+    /// <summary>Exports scrubbed raw data (no serials, names or network IDs) to bring back as test samples.</summary>
+    public ICommand SaveSamplesCommand { get; private set; } = null!;
+
     private void InitAdmin()
     {
         IsAdministrator = AdminCollector.IsAdministrator();
         RestartAsAdminCommand = new RelayCommand(RestartAsAdmin, () => !IsAdministrator && Stage == TestStage.Idle && !EnergyRunning);
         RunEnergyCommand = new AsyncRelayCommand(RunEnergyAsync, () => IsAdministrator && HasBattery && !AdminLoading && !EnergyRunning && Stage == TestStage.Idle);
+        SaveSamplesCommand = new RelayCommand(SaveSamples, () => _snapshot is not null && !AdminLoading);
     }
 
     public bool IsAdministrator { get => _isAdministrator; private set => Set(ref _isAdministrator, value); }
@@ -102,8 +106,9 @@ public sealed partial class MainViewModel
         try
         {
             var previousEnergy = _admin?.Energy;
-            var admin = await Task.Run(() => _createAdmin().Collect(new AdminOptions(), new CollectionLog()));
-            _admin = admin with { Energy = previousEnergy };
+            // Keep the raw outputs so "Save samples" can export scrubbed copies.
+            var admin = await Task.Run(() => _createAdmin().Collect(new AdminOptions { KeepRaw = true }, new CollectionLog()));
+            _admin = admin with { Energy = previousEnergy, Raw = admin.Raw with { Energy = _admin?.Raw.Energy } };
             Recompute();
         }
 #pragma warning disable CA1031 // Admin extras must never break the main check.
@@ -133,14 +138,15 @@ public sealed partial class MainViewModel
         try
         {
             var log = new CollectionLog();
-            var (energy, _) = await Task.Run(() => _createAdmin().RunEnergyDiagnostics(TimeSpan.FromSeconds(seconds), log));
+            var (energy, energyRaw) = await Task.Run(() => _createAdmin().RunEnergyDiagnostics(TimeSpan.FromSeconds(seconds), log));
             if (energy is null)
             {
                 StatusText = "Energy diagnostics did not produce a report: " + (log.Entries.LastOrDefault()?.Message ?? "unknown reason");
                 return;
             }
 
-            _admin = (_admin ?? new AdminData { IsAdministrator = true, CollectedAt = DateTimeOffset.Now }) with { Energy = energy };
+            var current = _admin ?? new AdminData { IsAdministrator = true, CollectedAt = DateTimeOffset.Now };
+            _admin = current with { Energy = energy, Raw = current.Raw with { Energy = energyRaw } };
             Recompute();
             StatusText = $"Energy diagnostics finished: {energy.ErrorCount} errors, {energy.WarningCount} warnings.";
         }
@@ -155,6 +161,24 @@ public sealed partial class MainViewModel
             timer.Stop();
             EnergyRunning = false;
             EnergyRunText = "";
+        }
+    }
+
+    private void SaveSamples()
+    {
+        if (_snapshot is null || _ui.PickFolder("Choose a folder for the scrubbed samples") is not { } folder)
+        {
+            return;
+        }
+
+        try
+        {
+            var files = Unveil.Core.Admin.SampleExport.Save(folder, _snapshot, _admin);
+            StatusText = $"Saved {files.Count} scrubbed sample files to {folder}.";
+        }
+        catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
+        {
+            StatusText = $"Could not save the samples: {ex.Message}";
         }
     }
 

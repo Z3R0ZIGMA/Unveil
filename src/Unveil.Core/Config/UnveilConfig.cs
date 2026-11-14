@@ -16,8 +16,6 @@ public sealed record UnveilConfig
 {
     public const string FileName = "unveil.json";
 
-    public BrandingConfig Branding { get; init; } = new();
-
     public HealthConfig Health { get; init; } = new();
 
     public DrainConfig Drain { get; init; } = new();
@@ -76,16 +74,6 @@ public sealed record UnveilConfig
         LongUptime = TimeSpan.FromDays(Settings.RestartDays),
     };
 
-    public ReportBranding ToBranding(string? configFolder) => new()
-    {
-        CompanyName = string.IsNullOrWhiteSpace(Branding.CompanyName) ? null : Branding.CompanyName.Trim(),
-        // A relative logo path is relative to the config file, so a USB stick can carry its own logo.
-        LogoPath = string.IsNullOrWhiteSpace(Branding.LogoPath) ? null
-            : Path.IsPathRooted(Branding.LogoPath) || configFolder is null ? Branding.LogoPath
-            : Path.Combine(configFolder, Branding.LogoPath),
-        FooterText = string.IsNullOrWhiteSpace(Branding.FooterText) ? null : Branding.FooterText.Trim(),
-    };
-
     public DrainTestOptions ToDrainTestOptions() => new() { Duration = TimeSpan.FromSeconds(Drain.SampleSeconds) };
 
     /// <summary>Registers the custom known offenders with the process scorer.</summary>
@@ -93,18 +81,6 @@ public sealed record UnveilConfig
         Power.KnownOffenders.SetCustom(KnownOffenders
             .Where(o => !string.IsNullOrWhiteSpace(o.Category) && o.Processes.Count > 0)
             .Select(o => (o.Category, o.Advice ?? "", (IEnumerable<string>)o.Processes)));
-}
-
-public sealed record BrandingConfig
-{
-    /// <summary>Shown at the top of the HTML report, e.g. "Fix-It IT". Null shows "Unveil".</summary>
-    public string? CompanyName { get; init; }
-
-    /// <summary>PNG/JPG/SVG, up to 1 MB. Relative paths are relative to unveil.json.</summary>
-    public string? LogoPath { get; init; }
-
-    /// <summary>Shown at the bottom of the report, e.g. "Questions? Call 555-0100".</summary>
-    public string? FooterText { get; init; }
 }
 
 public sealed record HealthConfig
@@ -266,7 +242,6 @@ public static class ConfigLoader
 
         return c with
         {
-            Branding = c.Branding ?? d.Branding,
             Health = health with
             {
                 GoodPercent = good,

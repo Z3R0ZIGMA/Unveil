@@ -752,13 +752,23 @@
                                 </DataGrid>
                             </TabItem>
                             <TabItem Header="Data notes">
-                                <ItemsControl ItemsSource="{Binding Notes}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Text="{Binding}" Style="{StaticResource BodyText}" FontSize="13" Margin="0,3" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                <StackPanel>
+                                    <ItemsControl ItemsSource="{Binding Notes}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding}" Style="{StaticResource BodyText}" FontSize="13" Margin="0,3" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                    <Border BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Margin="0,12,0,0" Padding="0,12,0,0">
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Content="Save samples..." Command="{Binding SaveSamplesCommand}" VerticalAlignment="Center"
+                                                    ToolTip="Exports the raw data with serial numbers, names, account IDs and network IDs removed" />
+                                            <TextBlock Style="{StaticResource MutedText}" VerticalAlignment="Center" Margin="0,0,16,0"
+                                                       Text="Save scrubbed copies of the raw battery data (and, as administrator, the energy history, sleep study and energy diagnostics) to improve Unveil's support for this laptop model. Serial numbers, names, account IDs and Wi-Fi details are removed." />
+                                        </DockPanel>
+                                    </Border>
+                                </StackPanel>
                             </TabItem>
                         </TabControl>
                     </Border>

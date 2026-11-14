@@ -90,17 +90,3 @@ public sealed record ReportDocument
         return slug.Length > 40 ? slug[..40].TrimEnd('-') : slug;
     }
 }
-
-/// <summary>Company branding for the HTML report. Comes from unveil.json from Phase 7.</summary>
-public sealed record ReportBranding
-{
-    /// <summary>Shown at the top of the report. Null shows just "Unveil".</summary>
-    public string? CompanyName { get; init; }
-
-    /// <summary>PNG/JPG/SVG file embedded in the report. Missing or unreadable files are skipped.</summary>
-    public string? LogoPath { get; init; }
-
-    public string? FooterText { get; init; }
-
-    public static ReportBranding Default { get; } = new();
-}

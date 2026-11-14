@@ -129,8 +129,6 @@ public sealed partial class MainViewModel
     /// <summary>Thresholds from unveil.json for the selected laptop type.</summary>
     private VerdictSettings Settings => _config.Config.ToVerdictSettings(SelectedMachineClass);
 
-    private Unveil.Core.Reports.ReportBranding Branding =>
-        _config.Config.ToBranding(_config.Path is { } p ? System.IO.Path.GetDirectoryName(p) : null);
 
     // ------------------------------------------------------------ test state
 

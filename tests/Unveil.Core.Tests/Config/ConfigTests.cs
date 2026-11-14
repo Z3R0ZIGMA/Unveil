@@ -1,4 +1,3 @@
-using Unveil.CommandLine;
 using Unveil.Core.Config;
 using Unveil.Core.Power;
 using Unveil.Core.Verdict;
@@ -59,7 +58,6 @@ public sealed class ConfigTests : IDisposable
         File("""
             {
               // comments are allowed
-              "branding": { "companyName": "Fix-It IT", "footerText": "Call 555-0100" },
               "health": { "cycleCountRating": 1000 },
               "drain": { "laptopType": "standard", "sampleSeconds": 90 },
             }
@@ -74,23 +72,19 @@ public sealed class ConfigTests : IDisposable
         Assert.Equal(MachineClass.Standard, c.DefaultLaptopType);
         Assert.Equal(TimeSpan.FromSeconds(90), c.ToDrainTestOptions().Duration);
         Assert.Equal(12, c.ToVerdictSettings(c.DefaultLaptopType).ElevatedDrainWatts);
-        Assert.Equal("Fix-It IT", c.ToBranding(_folder).CompanyName);
-        Assert.Equal("Call 555-0100", c.ToBranding(_folder).FooterText);
     }
 
     [Fact]
-    public void Custom_drain_limits_and_relative_logo_path()
+    public void Custom_drain_limits()
     {
         File("""
-            { "drain": { "thinAndLight": { "elevatedWatts": 6, "highWatts": 12 } },
-              "branding": { "logoPath": "logo.png" } }
+            { "drain": { "thinAndLight": { "elevatedWatts": 6, "highWatts": 12 } } }
             """);
 
         var c = ConfigLoader.Load(_folder).Config;
 
         Assert.Equal(6, c.ToVerdictSettings(MachineClass.ThinAndLight).ElevatedDrainWatts);
         Assert.Equal(12, c.ToVerdictSettings(MachineClass.ThinAndLight).HighDrainWatts);
-        Assert.Equal(Path.Combine(_folder, "logo.png"), c.ToBranding(_folder).LogoPath);
     }
 
     [Fact]
@@ -149,59 +143,5 @@ public sealed class ConfigTests : IDisposable
         Assert.Equal("Customer line-of-business app", KnownOffenders.Match("LOBClient", 1)?.Category);
         Assert.Equal("Customer line-of-business app", KnownOffenders.Match("TiWorker", 1)?.Category); // overrides the built-in entry
         Assert.Equal("Microsoft Teams", KnownOffenders.Match("ms-teams", 1)?.Category); // built-ins still work
-    }
-}
-
-public class CommandLineOptionsTests
-{
-    [Fact]
-    public void Plan_md_example_parses()
-    {
-        var o = CliOptions.Parse(["--cli", "--sample", "60", "--admin-checks", "--out", @"C:\Temp\Unveil", "--json", "--html"]);
-
-        Assert.Null(o.Error);
-        Assert.True(o.Sample);
-        Assert.Equal(60, o.SampleSeconds);
-        Assert.True(o.AdminChecks);
-        Assert.Equal(@"C:\Temp\Unveil", o.OutFolder);
-        Assert.True(o.Json);
-        Assert.True(o.Html);
-        Assert.Null(o.SummaryOnly); // the exe decides
-    }
-
-    [Fact]
-    public void Sample_without_seconds_uses_the_config()
-    {
-        var o = CliOptions.Parse(["--sample"]);
-
-        Assert.True(o.Sample);
-        Assert.Null(o.SampleSeconds);
-    }
-
-    [Theory]
-    [InlineData("--summary", true)]
-    [InlineData("--details", false)]
-    public void Output_mode(string flag, bool summary)
-    {
-        Assert.Equal(summary, CliOptions.Parse([flag]).SummaryOnly);
-    }
-
-    [Fact]
-    public void Config_file_and_laptop_type()
-    {
-        var o = CliOptions.Parse(["--config", @"D:\unveil.json", "--class", "gaming"]);
-
-        Assert.Equal(@"D:\unveil.json", o.ConfigFile);
-        Assert.Equal(MachineClass.Performance, o.MachineClass);
-    }
-
-    [Theory]
-    [InlineData("--sample", "5")]
-    [InlineData("--class", "huge")]
-    [InlineData("--config")]
-    [InlineData("--bogus")]
-    public void Bad_options_are_errors(params string[] args)
-    {
-        Assert.NotNull(CliOptions.Parse(args).Error);
     }
 }

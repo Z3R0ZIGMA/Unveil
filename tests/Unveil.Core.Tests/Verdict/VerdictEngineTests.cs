@@ -43,7 +43,6 @@ public class VerdictEngineTests
 
         Assert.Equal(VerdictKind.Healthy, v.Kind);
         Assert.Equal(Severity.Good, v.Severity);
-        Assert.Equal(ExitCodes.Healthy, v.ExitCode);
         Assert.Equal(DrainStatus.NotTested, v.Drain);
         Assert.Contains("87%", v.Message);
         Assert.Contains(v.Actions, a => a.Contains("full test"));
@@ -67,7 +66,6 @@ public class VerdictEngineTests
 
         Assert.Equal(VerdictKind.SoftwareDrain, v.Kind);
         Assert.Equal(Severity.Warning, v.Severity);
-        Assert.Equal(ExitCodes.SoftwareDrain, v.ExitCode);
         Assert.Equal(DrainStatus.Elevated, v.Drain);
         Assert.Contains("11.0 W", v.Message);
     }
@@ -100,7 +98,6 @@ public class VerdictEngineTests
         Assert.Equal(VerdictKind.BatteryWorn, v.Kind);
         Assert.Equal(Severity.Warning, v.Severity);
         Assert.Equal("Battery worn", v.Title);
-        Assert.Equal(ExitCodes.Battery, v.ExitCode);
         Assert.Contains("72%", v.Message);
         Assert.Contains(v.Actions, a => a.StartsWith("Plan a battery replacement", StringComparison.Ordinal));
     }
@@ -112,7 +109,6 @@ public class VerdictEngineTests
 
         Assert.Equal(VerdictKind.Both, v.Kind);
         Assert.Equal(Severity.Warning, v.Severity);
-        Assert.Equal(ExitCodes.Both, v.ExitCode);
     }
 
     [Fact]
@@ -123,7 +119,6 @@ public class VerdictEngineTests
         Assert.Equal(VerdictKind.ReplaceBattery, v.Kind);
         Assert.Equal(Severity.Danger, v.Severity);
         Assert.Equal("Replace battery", v.Title);
-        Assert.Equal(ExitCodes.Battery, v.ExitCode);
         Assert.Contains("52%", v.Message);
         Assert.Contains(v.Actions, a => a.Contains("TEST-BATTERY for the Laptop 14"));
     }
@@ -135,7 +130,6 @@ public class VerdictEngineTests
 
         Assert.Equal(VerdictKind.Both, v.Kind);
         Assert.Equal(Severity.Danger, v.Severity);
-        Assert.Equal(ExitCodes.Both, v.ExitCode);
         Assert.Equal("Replace battery and fix drain", v.Title);
     }
 
@@ -202,7 +196,6 @@ public class VerdictEngineTests
         var v = VerdictEngine.Evaluate(Snapshot(MakeBattery(design: 0, full: 41000, cycles: null)));
 
         Assert.Equal(VerdictKind.Inconclusive, v.Kind);
-        Assert.Equal(ExitCodes.Inconclusive, v.ExitCode);
         Assert.Equal(Severity.Neutral, v.Severity);
         Assert.Contains("design capacity reported as 0", v.Message);
         Assert.Contains(v.Evidence, f => f.Text.Contains("not reported by the manufacturer"));
@@ -245,7 +238,6 @@ public class VerdictEngineTests
         var v = VerdictEngine.Evaluate(Snapshot([], pcSystemType: 1));
 
         Assert.Equal(VerdictKind.NoBattery, v.Kind);
-        Assert.Equal(ExitCodes.NoBattery, v.ExitCode);
         Assert.Contains("desktop or virtual machine", v.Message);
         Assert.Equal(["No action needed."], v.Actions);
     }

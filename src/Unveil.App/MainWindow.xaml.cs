@@ -55,6 +55,12 @@ public partial class MainWindow : Window, IUiServices
         return dialog.ShowDialog(this) == true ? dialog.FileName : null;
     }
 
+    public string? PickFolder(string title)
+    {
+        var dialog = new OpenFolderDialog { Title = title };
+        return dialog.ShowDialog(this) == true ? dialog.FolderName : null;
+    }
+
     public bool RestartAsAdministrator()
     {
         if (Environment.ProcessPath is not { } exe)

@@ -35,7 +35,7 @@ public class ScrubbingTests
 
     /// <summary>
     /// Guard rail: nothing in /samples may contain a real serial number or computer name.
-    /// If this fails, re-save the sample with `Unveil.Cli --save-report`.
+    /// If this fails, re-save the sample with the app's Details > Data notes > Save samples.
     /// </summary>
     [Fact]
     public void SamplesAreScrubbed()

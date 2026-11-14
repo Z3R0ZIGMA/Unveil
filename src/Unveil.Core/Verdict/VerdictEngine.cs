@@ -553,15 +553,6 @@ public static class VerdictEngine
             HealthPercent = health,
             Evidence = evidence,
             Actions = actions,
-            ExitCode = kind switch
-            {
-                VerdictKind.Healthy => ExitCodes.Healthy,
-                VerdictKind.SoftwareDrain => ExitCodes.SoftwareDrain,
-                VerdictKind.BatteryWorn or VerdictKind.ReplaceBattery => ExitCodes.Battery,
-                VerdictKind.Both => ExitCodes.Both,
-                VerdictKind.Inconclusive => ExitCodes.Inconclusive,
-                _ => ExitCodes.NoBattery,
-            },
         };
     }
 
@@ -583,7 +574,6 @@ public static class VerdictEngine
             Actions = isMobile
                 ? ["Check Device Manager > Batteries, reseat the battery if possible, or test with a known-good battery."]
                 : ["No action needed."],
-            ExitCode = ExitCodes.NoBattery,
         };
     }
 

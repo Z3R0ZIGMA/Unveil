@@ -22,6 +22,9 @@ public interface IUiServices
 
     /// <summary>Starts Unveil again elevated and closes this instance. False if the user cancelled the UAC prompt.</summary>
     bool RestartAsAdministrator();
+
+    /// <summary>Shows a folder picker. Returns the folder, or null if cancelled.</summary>
+    string? PickFolder(string title);
 }
 
 public sealed record FindingItem(Severity Severity, string Text);
@@ -276,7 +279,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         try
         {
-            HtmlReportWriter.Write(Report, htmlPath, Branding);
+            HtmlReportWriter.Write(Report, htmlPath);
             var jsonPath = Path.ChangeExtension(htmlPath, ".json");
             JsonReportWriter.Write(Report, jsonPath);
             StatusText = $"Report saved: {Path.GetFileName(htmlPath)} (and .json)";

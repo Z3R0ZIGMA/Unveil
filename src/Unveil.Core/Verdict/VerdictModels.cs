@@ -199,18 +199,4 @@ public sealed record Verdict
     public IReadOnlyList<Finding> Evidence { get; init; } = [];
 
     public IReadOnlyList<string> Actions { get; init; } = [];
-
-    /// <summary>CLI exit code (plan.md section 7, plus 4 = inconclusive).</summary>
-    public int ExitCode { get; init; }
-}
-
-public static class ExitCodes
-{
-    public const int Healthy = 0;
-    public const int SoftwareDrain = 1;
-    public const int Battery = 2;
-    public const int Both = 3;
-    public const int Inconclusive = 4;
-    public const int NoBattery = 10;
-    public const int Error = 20;
 }

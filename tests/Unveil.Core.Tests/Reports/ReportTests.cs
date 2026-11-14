@@ -142,34 +142,6 @@ public class ReportTests
     }
 
     [Fact]
-    public void Html_shows_branding_and_embeds_the_logo()
-    {
-        var logo = Path.Combine(Path.GetTempPath(), $"unveil-test-logo-{Guid.NewGuid():N}.png");
-        File.WriteAllBytes(logo, [0x89, 0x50, 0x4E, 0x47]);
-        try
-        {
-            var branding = new ReportBranding { CompanyName = "Fix-It IT", LogoPath = logo, FooterText = "Call us on 555-0100" };
-            var html = HtmlReportWriter.Render(AsusDocument(), branding);
-
-            Assert.Contains("Fix-It IT", html);
-            Assert.Contains("Call us on 555-0100", html);
-            Assert.Contains("src=\"data:image/png;base64,iVBORw==\"", html);
-        }
-        finally
-        {
-            File.Delete(logo);
-        }
-    }
-
-    [Fact]
-    public void Html_skips_a_missing_logo()
-    {
-        var html = HtmlReportWriter.Render(AsusDocument(), new ReportBranding { LogoPath = @"Z:\does\not\exist.png" });
-
-        Assert.DoesNotContain("<img", html);
-    }
-
-    [Fact]
     public void Html_for_no_battery_renders_without_figures()
     {
         var html = HtmlReportWriter.Render(ReportDocument.Create(Snapshot([], pcSystemType: 1), generatedAt: Now));
