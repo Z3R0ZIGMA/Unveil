@@ -26,7 +26,9 @@ dotnet publish src/Unveil.Cli -c Release -r win-x64 -o publish/win-x64
 dotnet publish src/Unveil.Cli -c Release -r win-arm64 -o publish/win-arm64
 ```
 
-Options:
+**Easiest way to test a laptop:** copy `Unveil.Cli.exe` to a USB stick and double-click it. The window stays open until you press a key, and scrubbed samples are saved to a `samples` folder next to the exe.
+
+Options (when run from a command prompt):
 
 | Option | Purpose |
 |---|---|
