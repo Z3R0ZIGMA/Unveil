@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Unveil.Core.SystemInfo;
 
 namespace Unveil.Core.Battery;
@@ -11,7 +12,7 @@ public sealed record BatteryCollectionOptions
     public bool SkipBatteryReport { get; init; }
 }
 
-/// <summary>Everything Phase 1 collects about the machine's batteries.</summary>
+/// <summary>Everything collected about the machine's batteries.</summary>
 public sealed record BatterySnapshot
 {
     public DateTimeOffset CollectedAt { get; init; }
@@ -27,11 +28,22 @@ public sealed record BatterySnapshot
 
     public BatteryReport? Report { get; init; }
 
+    /// <summary><c>Win32_Battery.Status</c> per battery, e.g. "OK", "Pred Fail", "Service".</summary>
+    public IReadOnlyList<string> WindowsBatteryStatus { get; init; } = [];
+
     public IReadOnlyList<LogEntry> Log { get; init; } = [];
 
     public bool HasBattery => Batteries.Count > 0;
 
+    /// <summary>Statuses meaning Windows thinks the battery needs service or is failing.</summary>
+    public static readonly IReadOnlyList<string> ServiceStatuses = ["Pred Fail", "Service", "Degraded", "Error", "NonRecover"];
+
+    /// <summary>The first Windows status that means the battery needs service, if any.</summary>
+    public string? WindowsServiceStatus =>
+        WindowsBatteryStatus.FirstOrDefault(s => ServiceStatuses.Contains(s, StringComparer.OrdinalIgnoreCase));
+
     /// <summary>Raw source data, kept for saving scrubbed samples. Not part of the result model.</summary>
+    [JsonIgnore]
     public RawBatteryData Raw { get; init; } = new();
 }
 
@@ -58,6 +70,7 @@ public sealed class BatteryCollector(
         var system = Guard(log, "System", () => systemSource.Read(log)) ?? new SystemIdentity();
 
         IReadOnlyList<WmiBatteryData> wmi = [];
+        IReadOnlyList<string> windowsStatus = [];
         if (options.SkipWmi)
         {
             log.Info("WMI", "Skipped (--skip-wmi).");
@@ -65,6 +78,7 @@ public sealed class BatteryCollector(
         else
         {
             wmi = Guard(log, "WMI", () => wmiSource.Read(log)) ?? [];
+            windowsStatus = Guard(log, "WMI", () => wmiSource.ReadWindowsStatus(log)) ?? [];
         }
 
         BatteryReportResult? reportResult = null;
@@ -110,6 +124,7 @@ public sealed class BatteryCollector(
             Batteries = batteries,
             Combined = BatteryMerger.Combine(batteries),
             Report = report,
+            WindowsBatteryStatus = windowsStatus,
             Log = log.Entries,
             Raw = new RawBatteryData { Wmi = wmi, BatteryReport = reportResult },
         };

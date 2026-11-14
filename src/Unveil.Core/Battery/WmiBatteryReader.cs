@@ -62,6 +62,9 @@ public sealed class WmiBatteryData
 public interface IWmiBatterySource
 {
     IReadOnlyList<WmiBatteryData> Read(CollectionLog log);
+
+    /// <summary><c>Win32_Battery.Status</c> for each battery ("OK", "Pred Fail", "Service"...).</summary>
+    IReadOnlyList<string> ReadWindowsStatus(CollectionLog log);
 }
 
 /// <summary>Reads the four <c>root\wmi</c> battery classes and joins them by InstanceName.</summary>
@@ -126,6 +129,21 @@ public sealed class WmiBatteryReader : IWmiBatterySource
         }, staticData: true);
 
         return batteries.Values.OrderBy(b => b.InstanceName, StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    public IReadOnlyList<string> ReadWindowsStatus(CollectionLog log)
+    {
+        try
+        {
+            return WmiQuery.Select(@"root\cimv2", "SELECT Status FROM Win32_Battery", o => WmiQuery.String(o, "Status"))
+                .OfType<string>()
+                .ToList();
+        }
+        catch (Exception ex) when (ex is ManagementException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        {
+            log.Warning(Source, $"Win32_Battery: query failed: {ex.Message.Trim()}");
+            return [];
+        }
     }
 
     private static void Query(CollectionLog log, string className, Action<ManagementBaseObject> apply, bool staticData = false)

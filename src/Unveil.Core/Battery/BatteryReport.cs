@@ -106,7 +106,17 @@ public sealed record UsageEntry
 
     public int? ChargeCapacity { get; init; }
 
+    /// <summary>Capacity used during this period (mWh). Negative means it charged.</summary>
+    public int? Discharge { get; init; }
+
     public int? FullChargeCapacity { get; init; }
+
+    public bool IsActive => string.Equals(EntryType, "Active", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>Sleep states: Modern Standby ("ConnectedStandby") or S3 sleep / hibernate ("Suspend").</summary>
+    public bool IsSleep =>
+        string.Equals(EntryType, "ConnectedStandby", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(EntryType, "Suspend", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed record EnergyDrain

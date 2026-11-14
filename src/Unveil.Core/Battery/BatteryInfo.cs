@@ -69,7 +69,7 @@ public sealed record BatteryInfo
 
     public bool? Discharging { get; init; }
 
-    /// <summary>Windows flags the battery as critical (very low or failing).</summary>
+    /// <summary>Charge is critically low (this is a charge level, not a health indicator).</summary>
     public bool? Critical { get; init; }
 }
 

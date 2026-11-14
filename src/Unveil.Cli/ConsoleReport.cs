@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Reflection;
 using Unveil.Core;
 using Unveil.Core.Battery;
+using Unveil.Core.Reports;
+using Unveil.Core.Verdict;
 
 namespace Unveil.Cli;
 
@@ -10,25 +12,21 @@ internal static class ConsoleReport
 {
     private const int LabelWidth = 22;
     private const int MaxHistoryRows = 12;
-    private const int MaxDrainRows = 5;
-    private static readonly TimeSpan MinDrainDuration = TimeSpan.FromMinutes(10);
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
-    public static void Write(TextWriter o, BatterySnapshot s)
+    public static void Write(TextWriter o, ReportDocument doc)
     {
+        var s = doc.Snapshot;
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
         o.WriteLine();
-        o.WriteLine($"Unveil {version} - battery data (Phase 1 test build)");
+        o.WriteLine($"Unveil {version} - laptop battery check (test build)");
         o.WriteLine($"Collected: {s.CollectedAt.ToString("yyyy-MM-dd HH:mm:ss zzz", Inv)}   " +
                     $"Running as: {(s.IsAdministrator ? "administrator" : "standard user")}");
 
+        WriteVerdict(o, doc.Verdict);
         WriteSystem(o, s);
 
-        if (!s.HasBattery)
-        {
-            WriteNoBattery(o, s);
-        }
-        else
+        if (s.HasBattery)
         {
             foreach (var b in s.Batteries)
             {
@@ -45,11 +43,67 @@ internal static class ConsoleReport
         {
             WriteReport(o, report);
             WriteHistory(o, report);
-            WriteDrains(o, report);
         }
 
+        WriteUsage(o, doc.Usage);
         WriteNotes(o, s.Log);
+
+        Section(o, "SUMMARY (copy into a ticket)");
+        o.WriteLine(TextSummary.Create(doc));
         o.WriteLine();
+    }
+
+    private static void WriteVerdict(TextWriter o, Verdict v)
+    {
+        var tag = v.Severity switch
+        {
+            Severity.Good => "[OK]",
+            Severity.Warning => "[!]",
+            Severity.Danger => "[X]",
+            _ => "[i]",
+        };
+
+        Section(o, $"VERDICT: {tag} {v.Title.ToUpperInvariant()}");
+        o.WriteLine($"  {v.Message}");
+
+        o.WriteLine();
+        o.WriteLine("  What to do:");
+        foreach (var a in v.Actions)
+        {
+            o.WriteLine($"   - {a}");
+        }
+
+        o.WriteLine();
+        o.WriteLine("  Why:");
+        foreach (var f in v.Evidence)
+        {
+            var mark = f.Severity switch
+            {
+                Severity.Good => "ok",
+                Severity.Warning => "! ",
+                Severity.Danger => "X ",
+                _ => "  ",
+            };
+            o.WriteLine($"   {mark} {f.Text}");
+        }
+    }
+
+    private static void WriteUsage(TextWriter o, UsageSummary u)
+    {
+        Section(o, "RECENT POWER USE ON BATTERY (from the battery report)");
+        if (u.InUse is null && u.Asleep is null)
+        {
+            o.WriteLine("  Not enough time on battery in the report period.");
+            return;
+        }
+
+        Line(o, "In use", u.InUse is { } use
+            ? $"{Formatting.Watts(use.AverageWatts)} average over {Formatting.Duration(use.Duration)}"
+            : "Not enough data");
+        Line(o, "Asleep", u.Asleep is { } sleep
+            ? $"{Formatting.Watts(sleep.AverageWatts, "0.00")} average over {Formatting.Duration(sleep.Duration)}" +
+              (sleep.PercentPerHour is { } pph ? $" ({Formatting.Percent(pph)} of a full charge per hour)" : "")
+            : "Not enough data");
     }
 
     private static void WriteSystem(TextWriter o, BatterySnapshot s)
@@ -67,17 +121,6 @@ internal static class ConsoleReport
         Line(o, "Type", s.System.PcSystemTypeName);
     }
 
-    private static void WriteNoBattery(TextWriter o, BatterySnapshot s)
-    {
-        Section(o, "BATTERY");
-        o.WriteLine("  No battery detected.");
-        var role = s.Report?.System.PlatformRole;
-        o.WriteLine(s.System.PcSystemType is 2 or 8 || role is "Mobile" or "Slate"
-            ? "  This machine reports itself as a laptop/tablet, so the battery may be missing,\n" +
-              "  disconnected or not recognised by Windows. Check Device Manager > Batteries."
-            : "  This looks like a desktop or virtual machine, so that is expected.");
-    }
-
     private static void WriteBattery(TextWriter o, BatteryInfo b, int count)
     {
         Section(o, count > 1 ? $"BATTERY {b.Index} of {count}" : "BATTERY");
@@ -86,10 +129,7 @@ internal static class ConsoleReport
         Line(o, "Name / part no.", b.Name);
         Line(o, "Manufacturer", b.Manufacturer);
         Line(o, "Serial number", b.SerialNumber);
-        Line(o, "Chemistry", b.Chemistry is null ? null
-            : b.ChemistryCode is { } code && !string.Equals(code, b.Chemistry, StringComparison.OrdinalIgnoreCase)
-                ? $"{b.Chemistry} ({code})"
-                : b.Chemistry);
+        Line(o, "Chemistry", BatteryText.Chemistry(b));
         Line(o, "Manufacture date", b.ManufactureDate);
         Line(o, "Design capacity", Capacity(b.DesignCapacity, unit));
         Line(o, "Full charge capacity", Capacity(b.FullChargeCapacity, unit));
@@ -100,13 +140,13 @@ internal static class ConsoleReport
             ? null
             : $"{Capacity(b.RemainingCapacity, unit)}{(b.ChargePercent is { } p ? $" ({p.ToString("0.0", Inv)}%)" : "")}");
         Line(o, "Voltage", b.VoltageMillivolts is { } mv ? $"{(mv / 1000.0).ToString("0.00", Inv)} V" : null);
-        Line(o, "Power", PowerState(b));
+        Line(o, "Power", BatteryText.PowerState(b));
         if (b.Critical == true)
         {
-            Line(o, "Critical", "YES - Windows flags this battery as critical");
+            Line(o, "Charge level", "Critically low");
         }
 
-        Line(o, "Data from", Sources(b.Sources));
+        Line(o, "Data from", BatteryText.Sources(b.Sources));
     }
 
     private static void WriteCombined(TextWriter o, BatteryTotals t)
@@ -174,31 +214,6 @@ internal static class ConsoleReport
         }
     }
 
-    private static void WriteDrains(TextWriter o, BatteryReport r)
-    {
-        var drains = r.EnergyDrains
-            .Where(d => d.Duration >= MinDrainDuration && d.AverageWatts is not null)
-            .ToList();
-
-        Section(o, $"RECENT ON-BATTERY SESSIONS (10 min or longer: {drains.Count})");
-        if (drains.Count == 0)
-        {
-            o.WriteLine("  None in the battery report period.");
-            return;
-        }
-
-        o.WriteLine($"  {"Start",-18}{"Duration",10}{"Used",14}{"Avg draw",11}");
-        foreach (var d in drains.TakeLast(MaxDrainRows))
-        {
-            o.WriteLine(
-                $"  {d.Start?.ToLocalTime().ToString("yyyy-MM-dd HH:mm", Inv),-18}{Span(d.Duration),10}" +
-                $"{Num(d.Used) + " mWh",14}{Watts(d.AverageWatts * 1000),11}");
-        }
-
-        var average = drains.Sum(d => d.Used!.Value) / drains.Sum(d => d.Duration!.Value.TotalHours) / 1000.0;
-        o.WriteLine($"  Average draw across all {drains.Count} sessions: {average.ToString("0.0", Inv)} W");
-    }
-
     private static void WriteNotes(TextWriter o, IReadOnlyList<LogEntry> log)
     {
         Section(o, "NOTES");
@@ -241,38 +256,6 @@ internal static class ConsoleReport
 
     private static string Watts(double? milliwatts) =>
         milliwatts is { } mw ? $"{(mw / 1000.0).ToString("0.0", Inv)} W" : "-";
-
-    private static string PowerState(BatteryInfo b)
-    {
-        if (b.PowerOnline is null && b.Charging is null && b.Discharging is null)
-        {
-            return "Unknown (no live WMI data)";
-        }
-
-        if (b.Discharging == true || b.PowerOnline == false)
-        {
-            return b.DischargeRateMilliwatts is > 0
-                ? $"On battery, discharging at {Watts(b.DischargeRateMilliwatts)}"
-                : "On battery";
-        }
-
-        if (b.Charging == true)
-        {
-            return b.ChargeRateMilliwatts is > 0
-                ? $"AC connected, charging at {Watts(b.ChargeRateMilliwatts)}"
-                : "AC connected, charging";
-        }
-
-        return "AC connected, not charging";
-    }
-
-    private static string Sources(BatteryDataSources s) => s switch
-    {
-        BatteryDataSources.Wmi | BatteryDataSources.BatteryReport => "WMI + battery report",
-        BatteryDataSources.Wmi => "WMI only",
-        BatteryDataSources.BatteryReport => "Battery report only",
-        _ => "None",
-    };
 
     private static string? Runtime(TimeSpan? now, TimeSpan? whenNew) => now is null && whenNew is null
         ? null

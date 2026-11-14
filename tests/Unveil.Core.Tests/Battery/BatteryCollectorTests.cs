@@ -6,7 +6,7 @@ namespace Unveil.Core.Tests.Battery;
 
 public class BatteryCollectorTests
 {
-    private sealed class FakeWmi(Func<IReadOnlyList<WmiBatteryData>> read) : IWmiBatterySource
+    private sealed class FakeWmi(Func<IReadOnlyList<WmiBatteryData>> read, IReadOnlyList<string>? status = null) : IWmiBatterySource
     {
         public bool Called { get; private set; }
 
@@ -15,6 +15,8 @@ public class BatteryCollectorTests
             Called = true;
             return read();
         }
+
+        public IReadOnlyList<string> ReadWindowsStatus(CollectionLog log) => status ?? [];
     }
 
     private sealed class FakeReport(string? fixture) : IBatteryReportSource
@@ -130,5 +132,24 @@ public class BatteryCollectorTests
         Assert.False(b.Health.IsKnown);
         Assert.Null(b.CycleCount);
         Assert.Equal("XYZ", b.Chemistry);
+    }
+
+    [Fact]
+    public void Windows_battery_status_is_collected()
+    {
+        var wmi = new FakeWmi(() => [new WmiBatteryData { InstanceName = "B0" }], ["Pred Fail"]);
+        var snapshot = new BatteryCollector(wmi, new FakeReport("two-batteries.xml"), Desktop).Collect();
+
+        Assert.Equal(["Pred Fail"], snapshot.WindowsBatteryStatus);
+        Assert.Equal("Pred Fail", snapshot.WindowsServiceStatus);
+    }
+
+    [Fact]
+    public void Ok_windows_status_is_not_a_service_status()
+    {
+        var wmi = new FakeWmi(() => [new WmiBatteryData { InstanceName = "B0" }], ["OK"]);
+        var snapshot = new BatteryCollector(wmi, new FakeReport("two-batteries.xml"), Desktop).Collect();
+
+        Assert.Null(snapshot.WindowsServiceStatus);
     }
 }

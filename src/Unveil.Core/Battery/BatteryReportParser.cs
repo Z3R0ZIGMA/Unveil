@@ -136,6 +136,7 @@ public static class BatteryReportParser
         OnAc = Flag(Attr(e, "Ac")) ?? false,
         EntryType = Attr(e, "EntryType"),
         ChargeCapacity = Int(Attr(e, "ChargeCapacity")),
+        Discharge = Int(Attr(e, "Discharge")),
         FullChargeCapacity = Int(Attr(e, "FullChargeCapacity")),
     };
 
