@@ -44,8 +44,15 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly List<double> _recentWatts = [];
     private bool _liveReading;
 
-    public MainViewModel(Func<BatterySnapshot> collect, ILiveBatterySource live, IUiServices ui, Func<Unveil.Core.Power.DrainTest>? createTest = null)
+    public MainViewModel(
+        Func<BatterySnapshot> collect,
+        ILiveBatterySource live,
+        IUiServices ui,
+        Func<Unveil.Core.Power.DrainTest>? createTest = null,
+        Unveil.Core.Config.ConfigSource? config = null)
     {
+        _config = config ?? new Unveil.Core.Config.ConfigSource(Unveil.Core.Config.UnveilConfig.Default, null, false, []);
+        _selectedMachineClass = _config.Config.DefaultLaptopType;
         _collect = collect;
         _live = live;
         _ui = ui;
@@ -221,7 +228,7 @@ public sealed partial class MainViewModel : ObservableObject
                 : null;
             _lastTest = null; // a fresh check makes the old test results stale
             _admin = null;
-            var report = ReportDocument.Create(snapshot, null, Settings, powerSettings: _powerSettings);
+            var report = ReportDocument.Create(snapshot, null, Settings, powerSettings: _powerSettings, thresholds: _config.Config.ToSettingsThresholds());
             Apply(report);
             StatusText = $"Checked {report.GeneratedAt.ToString("HH:mm", Inv)} as {(snapshot.IsAdministrator ? "administrator" : "standard user")}";
             await ReadLiveAsync();
@@ -269,7 +276,7 @@ public sealed partial class MainViewModel : ObservableObject
 
         try
         {
-            HtmlReportWriter.Write(Report, htmlPath);
+            HtmlReportWriter.Write(Report, htmlPath, Branding);
             var jsonPath = Path.ChangeExtension(htmlPath, ".json");
             JsonReportWriter.Write(Report, jsonPath);
             StatusText = $"Report saved: {Path.GetFileName(htmlPath)} (and .json)";
@@ -359,9 +366,12 @@ public sealed partial class MainViewModel : ObservableObject
         ApplyAdmin(report);
         ApplySettings(report);
         Details = BuildDetails(s);
-        Notes = s.Log.Count == 0
-            ? ["All sources were read without problems."]
+        var notes = s.Log.Count == 0
+            ? new List<string> { "All sources were read without problems." }
             : s.Log.Select(e => $"{e.Level} - {e.Source}: {e.Message}").ToList();
+        notes.Add(_config.Path is { } configPath ? $"Settings file: {configPath}" : "Settings file: none (using the defaults).");
+        notes.AddRange(_config.Log.Select(e => $"{e.Level} - {e.Source}: {e.Message}"));
+        Notes = notes;
     }
 
     private static string BatteryLine(BatteryInfo b)

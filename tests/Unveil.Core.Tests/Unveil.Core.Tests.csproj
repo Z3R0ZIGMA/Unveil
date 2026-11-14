@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Unveil.Core\Unveil.Core.csproj" />
+    <ProjectReference Include="..\..\src\Unveil.CommandLine\Unveil.CommandLine.csproj" />
   </ItemGroup>
 
   <!-- Synthetic fixtures live next to the tests; real (scrubbed) reports live in /samples. -->

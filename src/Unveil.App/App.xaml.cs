@@ -16,6 +16,10 @@ public partial class App : Application
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
 
+        // unveil.json next to the exe: thresholds, laptop type, test length, branding, extra known offenders.
+        var config = Unveil.Core.Config.ConfigLoader.Load(Unveil.Core.Config.ConfigLoader.ExeFolder);
+        config.Config.ApplyKnownOffenders();
+
         var window = new MainWindow();
         ILiveBatterySource live = e.Args.Contains("--simulate-discharge", StringComparer.OrdinalIgnoreCase)
             ? new SimulatedDischarge(new WmiLiveBatteryReader())
@@ -24,7 +28,8 @@ public partial class App : Application
             () => BatteryCollector.CreateDefault().Collect(),
             live,
             window,
-            () => new DrainTest(live, new PerfCounterActivitySource()));
+            () => new DrainTest(live, new PerfCounterActivitySource()),
+            config);
         window.DataContext = viewModel;
         MainWindow = window;
 

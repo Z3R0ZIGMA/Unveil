@@ -1,8 +1,8 @@
 using Unveil.Core.Verdict;
 
-namespace Unveil.Cli;
+namespace Unveil.CommandLine;
 
-internal sealed record CliOptions
+public sealed record CliOptions
 {
     public bool ShowHelp { get; init; }
 
@@ -22,10 +22,20 @@ internal sealed record CliOptions
     /// <summary>Open the HTML report in the default browser afterwards.</summary>
     public bool Open { get; init; }
 
-    /// <summary>Run the live drain test for this many seconds (null = do not run it).</summary>
+    /// <summary>Run the live drain test.</summary>
+    public bool Sample { get; init; }
+
+    /// <summary>Test length; null uses unveil.json (default 60 s).</summary>
     public int? SampleSeconds { get; init; }
 
-    public MachineClass MachineClass { get; init; } = MachineClass.ThinAndLight;
+    /// <summary>Laptop type for the drain limits; null uses unveil.json.</summary>
+    public MachineClass? MachineClass { get; init; }
+
+    /// <summary>True: print only the summary. False: full output. Null: the exe's default.</summary>
+    public bool? SummaryOnly { get; init; }
+
+    /// <summary>A config file to use instead of unveil.json next to the exe.</summary>
+    public string? ConfigFile { get; init; }
 
     /// <summary>Run the administrator-only checks (energy history, sleep study, energy diagnostics).</summary>
     public bool AdminChecks { get; init; }
@@ -59,9 +69,26 @@ internal sealed record CliOptions
                 case "--open":
                     options = options with { Open = true };
                     break;
+                case "--cli":
+                    // "Unveil.exe --cli": accepted here too, so the same command works with both exes.
+                    break;
+                case "--summary":
+                    options = options with { SummaryOnly = true };
+                    break;
+                case "--details":
+                    options = options with { SummaryOnly = false };
+                    break;
+                case "--config":
+                    if (!TryValue(args, ref i, out var configFile))
+                    {
+                        return options with { Error = "--config needs a file, e.g. --config D:\\unveil.json" };
+                    }
+
+                    options = options with { ConfigFile = configFile };
+                    break;
                 case "--sample":
-                    // Optional number of seconds; plan.md uses "--sample 60".
-                    var seconds = 60;
+                    // Optional number of seconds; plan.md uses "--sample 60". Without one, unveil.json decides.
+                    int? seconds = null;
                     if (i + 1 < args.Length && int.TryParse(args[i + 1], out var parsed))
                     {
                         seconds = parsed;
@@ -73,7 +100,7 @@ internal sealed record CliOptions
                         return options with { Error = "--sample must be between 10 and 600 seconds" };
                     }
 
-                    options = options with { SampleSeconds = seconds };
+                    options = options with { Sample = true, SampleSeconds = seconds };
                     break;
                 case "--admin-checks":
                     options = options with { AdminChecks = true };
@@ -92,11 +119,11 @@ internal sealed record CliOptions
                         return options with { Error = "--class needs thin, standard or performance" };
                     }
 
-                    MachineClass? machineClass = cls.ToLowerInvariant() switch
+                    Unveil.Core.Verdict.MachineClass? machineClass = cls.ToLowerInvariant() switch
                     {
-                        "thin" or "thinandlight" or "ultrabook" => MachineClass.ThinAndLight,
-                        "standard" => MachineClass.Standard,
-                        "performance" or "gaming" or "workstation" => MachineClass.Performance,
+                        "thin" or "thinandlight" or "ultrabook" => Unveil.Core.Verdict.MachineClass.ThinAndLight,
+                        "standard" => Unveil.Core.Verdict.MachineClass.Standard,
+                        "performance" or "gaming" or "workstation" => Unveil.Core.Verdict.MachineClass.Performance,
                         _ => null,
                     };
                     if (machineClass is null)
@@ -104,7 +131,7 @@ internal sealed record CliOptions
                         return options with { Error = $"Unknown --class '{cls}'. Use thin, standard or performance." };
                     }
 
-                    options = options with { MachineClass = machineClass.Value };
+                    options = options with { MachineClass = machineClass };
                     break;
                 case "--out":
                     if (!TryValue(args, ref i, out var outFolder))
@@ -163,15 +190,21 @@ internal sealed record CliOptions
     {
         output.WriteLine("""
 
-            Unveil.Cli - laptop battery check (test build)
+            Unveil - laptop battery check. See what's really draining your battery.
 
             Usage:
-              Unveil.Cli.exe [--sample [seconds]] [--class thin|standard|performance]
+              Unveil.Cli.exe [options]        (in a Command Prompt or PowerShell)
+              Unveil.exe --cli [options]      (from an RMM script: prints the summary, returns the exit code)
+
+              [--sample [seconds]] [--class thin|standard|performance]
                              [--admin-checks [--energy-seconds N]]
                              [--out <folder>] [--json] [--html] [--open]
                              [--save-report <folder>] [--skip-wmi] [--skip-report]
 
             Options:
+              --summary / --details   Print only the 5-8 line summary / the full output.
+                                      (Unveil.exe --cli defaults to the summary, Unveil.Cli.exe to details.)
+              --config <file>         Use this config file instead of unveil.json next to the exe.
               --sample [seconds]      Run the live drain test (default 60 s): measures the power draw on
                                       battery and which apps use the most power. Leave the laptop idle.
               --class <type>          Laptop type for the drain limits: thin (default, 8/15 W),

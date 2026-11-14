@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Unveil.Core\Unveil.Core.csproj" />
+    <ProjectReference Include="..\Unveil.CommandLine\Unveil.CommandLine.csproj" />
   </ItemGroup>
 
 </Project>

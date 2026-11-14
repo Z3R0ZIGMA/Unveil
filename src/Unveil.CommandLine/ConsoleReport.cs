@@ -5,10 +5,10 @@ using Unveil.Core.Battery;
 using Unveil.Core.Reports;
 using Unveil.Core.Verdict;
 
-namespace Unveil.Cli;
+namespace Unveil.CommandLine;
 
 /// <summary>Plain-text output of a battery snapshot. ASCII only so it reads cleanly in any console or RMM log.</summary>
-internal static class ConsoleReport
+public static class ConsoleReport
 {
     private const int LabelWidth = 22;
     private const int MaxHistoryRows = 12;
@@ -19,7 +19,7 @@ internal static class ConsoleReport
         var s = doc.Snapshot;
         var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "?";
         o.WriteLine();
-        o.WriteLine($"Unveil {version} - laptop battery check (test build)");
+        o.WriteLine($"Unveil {version} - laptop battery check");
         o.WriteLine($"Collected: {s.CollectedAt.ToString("yyyy-MM-dd HH:mm:ss zzz", Inv)}   " +
                     $"Running as: {(s.IsAdministrator ? "administrator" : "standard user")}");
 
@@ -391,7 +391,7 @@ internal static class ConsoleReport
     private static string Date(DateTimeOffset? d) => d?.ToLocalTime().ToString("yyyy-MM-dd", Inv) ?? "?";
 
     /// <summary>Up to <paramref name="max"/> evenly spaced indexes, always including the first and last.</summary>
-    internal static IEnumerable<int> SampleIndexes(int count, int max)
+    public static IEnumerable<int> SampleIndexes(int count, int max)
     {
         if (count <= max)
         {

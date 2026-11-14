@@ -50,10 +50,11 @@ public sealed record ReportDocument
         VerdictSettings? settings = null,
         DateTimeOffset? generatedAt = null,
         AdminData? admin = null,
-        PowerSettings? powerSettings = null)
+        PowerSettings? powerSettings = null,
+        SettingsThresholds? thresholds = null)
     {
         settings ??= VerdictSettings.Default;
-        var checks = powerSettings is null ? [] : SettingsAdvisor.Evaluate(powerSettings);
+        var checks = powerSettings is null ? [] : SettingsAdvisor.Evaluate(powerSettings, thresholds);
         return new ReportDocument
         {
             GeneratedAt = generatedAt ?? DateTimeOffset.Now,

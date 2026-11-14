@@ -124,7 +124,13 @@ public sealed partial class MainViewModel
 
     private MachineClass _selectedMachineClass = MachineClass.ThinAndLight;
 
-    private VerdictSettings Settings => VerdictSettings.Default.For(SelectedMachineClass);
+    private readonly Unveil.Core.Config.ConfigSource _config;
+
+    /// <summary>Thresholds from unveil.json for the selected laptop type.</summary>
+    private VerdictSettings Settings => _config.Config.ToVerdictSettings(SelectedMachineClass);
+
+    private Unveil.Core.Reports.ReportBranding Branding =>
+        _config.Config.ToBranding(_config.Path is { } p ? System.IO.Path.GetDirectoryName(p) : null);
 
     // ------------------------------------------------------------ test state
 
@@ -192,7 +198,7 @@ public sealed partial class MainViewModel
         _testCts = new CancellationTokenSource();
         var token = _testCts.Token;
         _skipUnplug = skipUnplug;
-        var options = new DrainTestOptions { Duration = duration ?? TimeSpan.FromSeconds(60) };
+        var options = new DrainTestOptions { Duration = duration ?? TimeSpan.FromSeconds(_config.Config.Drain.SampleSeconds) };
 
         try
         {
@@ -277,7 +283,7 @@ public sealed partial class MainViewModel
             return;
         }
 
-        Apply(ReportDocument.Create(_snapshot, _lastTest, Settings, admin: _admin, powerSettings: _powerSettings));
+        Apply(ReportDocument.Create(_snapshot, _lastTest, Settings, admin: _admin, powerSettings: _powerSettings, thresholds: _config.Config.ToSettingsThresholds()));
     }
 
     private void ApplyActivity(ReportDocument report)

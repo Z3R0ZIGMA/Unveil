@@ -5,13 +5,13 @@ using System.Text.Json.Serialization;
 using Unveil.Core.Admin;
 using Unveil.Core.Battery;
 
-namespace Unveil.Cli;
+namespace Unveil.CommandLine;
 
 /// <summary>
 /// Saves scrubbed copies of the raw data (battery report XML + WMI values) so they can be used
 /// as test samples. Serial numbers and the computer name are removed before anything is written.
 /// </summary>
-internal static class SampleWriter
+public static class SampleWriter
 {
     private static readonly JsonSerializerOptions Json = new()
     {

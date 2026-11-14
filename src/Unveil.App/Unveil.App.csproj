@@ -8,6 +8,8 @@
     <RootNamespace>Unveil.App</RootNamespace>
     <ApplicationIcon>unveil.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <!-- Program.Main handles command-line mode (the cli switch) before any window is created. -->
+    <StartupObject>Unveil.App.Program</StartupObject>
   </PropertyGroup>
 
   <!--
@@ -31,6 +33,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Unveil.Core\Unveil.Core.csproj" />
+    <ProjectReference Include="..\Unveil.CommandLine\Unveil.CommandLine.csproj" />
   </ItemGroup>
 
 </Project>

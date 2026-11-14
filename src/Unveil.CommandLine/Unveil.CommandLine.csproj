@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Command-line mode shared by Unveil.Cli.exe and Unveil.exe in CLI mode (plan.md section 7). -->
+  <PropertyGroup>
+    <RootNamespace>Unveil.CommandLine</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Unveil.Core\Unveil.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unveil.Core.Tests" />
+  </ItemGroup>
+
+</Project>

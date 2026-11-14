@@ -51,10 +51,38 @@ public static class KnownOffenders
         .SelectMany(g => g.Names.Select(n => (n, new KnownOffender(g.Category, g.Advice))))
         .ToDictionary(x => x.n, x => x.Item2, StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Extra entries from unveil.json; they win over the built-in list. Set once at startup.</summary>
+    private static Dictionary<string, KnownOffender> _custom = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Replaces the custom entries (from the config file's knownOffenders list).</summary>
+    public static void SetCustom(IEnumerable<(string Category, string Advice, IEnumerable<string> Names)> groups)
+    {
+        var custom = new Dictionary<string, KnownOffender>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (category, advice, names) in groups)
+        {
+            foreach (var name in names.Where(n => !string.IsNullOrWhiteSpace(n)))
+            {
+                custom[Normalise(name)] = new KnownOffender(category, advice);
+            }
+        }
+
+        _custom = custom;
+    }
+
+    private static string Normalise(string name)
+    {
+        var n = name.Trim();
+        return n.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? n[..^4] : n;
+    }
+
     /// <summary>Returns the offender entry for an executable name (without ".exe"), or null.</summary>
     public static KnownOffender? Match(string name, int processCount)
     {
-        var key = name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
+        var key = Normalise(name);
+        if (_custom.TryGetValue(key, out var custom))
+        {
+            return custom;
+        }
 
         if (Browsers.Contains(key, StringComparer.OrdinalIgnoreCase))
         {
