@@ -194,7 +194,7 @@ public sealed class CapacityChart : FrameworkElement
         FlowDirection.LeftToRight,
         new Typeface(TextElement.GetFontFamily(this), FontStyles.Normal, bold ? FontWeights.SemiBold : FontWeights.Normal, FontStretches.Normal),
         size,
-        brush ?? SystemColors.ControlTextBrush,
+        brush ?? (Brush)Application.Current.FindResource("Text"),
         VisualTreeHelper.GetDpi(this).PixelsPerDip);
 
     private static double NiceStep(double raw)
