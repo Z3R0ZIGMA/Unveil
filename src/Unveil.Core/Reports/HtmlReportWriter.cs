@@ -427,7 +427,8 @@ public static class HtmlReportWriter
                 _ => $"{f.Occurrences.Count} times: " + string.Join(", ", f.Occurrences.Take(6).Select(o => o.FirstOrDefault().Value).Where(v => !string.IsNullOrEmpty(v))),
             };
             html.Append($"<li class=\"{SevClass(severity)}\"><span class=\"dot\" aria-hidden=\"true\">{Icon(severity)}</span>" +
-                        $"<span class=\"sr\">{SevLabel(severity)}: </span><span><strong>{E(f.Name)}</strong>. {E(f.Description)}" +
+                        $"<span class=\"sr\">{SevLabel(severity)}: </span><span><strong>{E(f.Name)}</strong>." +
+                        (f.Description.Length > 0 ? $" {E(f.Description)}" : "") +
                         (detail.Length > 0 ? $" <span class=\"muted\">({E(detail)})</span>" : "") + "</span></li>\n");
         }
 
@@ -507,7 +508,8 @@ public static class HtmlReportWriter
         if (u.Asleep is { } sleep)
         {
             rows.Add(("Asleep on battery", $"{Watts(sleep.AverageWatts, "0.00")} average over {Duration(sleep.Duration)}" +
-                                           (sleep.PercentPerHour is { } pph ? $" ({Percent(pph)} of a full charge per hour)" : "")));
+                                           (sleep.PercentPerHour is { } pph ? $" ({Percent(pph)} of a full charge per hour)" : "") +
+                                           (u.AsleepIncludesHibernation ? "; all sleep, including hibernation" : "")));
         }
 
         if (doc.Drain is { } drain)

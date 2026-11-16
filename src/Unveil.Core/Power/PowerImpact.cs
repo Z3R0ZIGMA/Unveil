@@ -84,6 +84,7 @@ public static class PowerImpact
         }
 
         coreCount = Math.Max(1, coreCount);
+        excludePids = WithChildren(snapshots, excludePids);
         var totals = new Dictionary<(int Pid, string Name), (TimeSpan Cpu, long Io, TimeSpan Gpu)>();
         var duration = TimeSpan.Zero;
 
@@ -205,6 +206,36 @@ public static class PowerImpact
             .ToList();
 
         return result with { Apps = apps };
+    }
+
+    /// <summary>
+    /// The excluded processes plus everything they started (and so on), e.g. the powercfg runs Unveil starts for the
+    /// energy history: Unveil's own work is not the laptop's drain.
+    /// </summary>
+    private static IReadOnlySet<int>? WithChildren(IReadOnlyList<ActivitySnapshot> snapshots, IReadOnlySet<int>? excluded)
+    {
+        if (excluded is null || excluded.Count == 0)
+        {
+            return excluded;
+        }
+
+        var all = new HashSet<int>(excluded);
+        var processes = snapshots.SelectMany(s => s.Processes).Where(p => p.ParentPid is not null).ToList();
+        bool added;
+        do
+        {
+            added = false;
+            foreach (var p in processes)
+            {
+                if (all.Contains(p.ParentPid!.Value) && p.Pid != p.ParentPid && all.Add(p.Pid))
+                {
+                    added = true;
+                }
+            }
+        }
+        while (added);
+
+        return all;
     }
 
     private static TimeSpan Positive(TimeSpan t) => t > TimeSpan.Zero ? t : TimeSpan.Zero;

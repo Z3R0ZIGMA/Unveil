@@ -250,7 +250,7 @@ public sealed partial class MainViewModel : ObservableObject
             StatusText = $"Checked {report.GeneratedAt.ToString("HH:mm", Inv)} as {(snapshot.IsAdministrator ? "administrator" : "standard user")}";
             await ReadLiveAsync();
             _liveTimer.Start();
-            _ = LoadAdminAsync(); // energy history and sleep study, in the background (admin only)
+            _adminTask = LoadAdminAsync(); // energy history and sleep study, in the background (admin only)
         }
 #pragma warning disable CA1031 // The UI must never crash on a collection failure; show it instead.
         catch (Exception ex)
@@ -365,7 +365,9 @@ public sealed partial class MainViewModel : ObservableObject
         InUseWatts = usage.InUse is { } use ? Watts(use.AverageWatts) : "-";
         InUseDetail = usage.InUse is { } u ? $"average while in use ({Duration(u.Duration)} on battery)" : "not enough time on battery recently";
         AsleepWatts = usage.Asleep is { } sleep ? Watts(sleep.AverageWatts, "0.00") : "-";
-        AsleepDetail = usage.Asleep is { PercentPerHour: { } pph } ? $"while asleep, about {Percent(pph)} of a full charge per hour" : "not enough sleep on battery recently";
+        AsleepDetail = usage.Asleep is { PercentPerHour: { } pph }
+            ? $"while asleep, about {Percent(pph)} of a full charge per hour" + (usage.AsleepIncludesHibernation ? " (all sleep, including hibernation)" : "")
+            : "not enough sleep on battery recently";
         var est = s.Report?.RuntimeEstimates;
         EstimateText = est?.AtFullChargeCapacity?.ActiveRuntime is { } now
             ? $"Windows estimates {Duration(now)} of use on a full charge ({Duration(est.AtDesignCapacity?.ActiveRuntime)} when new)."

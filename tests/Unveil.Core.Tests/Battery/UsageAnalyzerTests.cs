@@ -29,6 +29,21 @@ public class UsageAnalyzerTests
         Assert.Equal(4053, usage.Asleep.EnergyUsed);
         Assert.Equal(0.19, usage.Asleep.AverageWatts, 2);
         Assert.Equal(0.51, usage.Asleep.PercentPerHour!.Value, 2);
+        Assert.True(usage.AsleepIncludesHibernation); // Modern Standby laptop with "Suspend" periods
+    }
+
+    [Fact]
+    public void Suspend_is_only_called_hibernation_on_modern_standby_laptops()
+    {
+        BatteryReport Report(bool? modernStandby) => new()
+        {
+            System = new ReportSystemInfo { ModernStandby = modernStandby },
+            RecentUsage = [Entry("Suspend", 120, 400), Entry("ConnectedStandby", 120, 400)],
+        };
+
+        Assert.True(UsageAnalyzer.Summarize(Report(true)).AsleepIncludesHibernation);
+        Assert.False(UsageAnalyzer.Summarize(Report(false)).AsleepIncludesHibernation); // S3 sleep, not hibernation
+        Assert.False(UsageAnalyzer.Summarize(Report(null)).AsleepIncludesHibernation);
     }
 
     [Fact]

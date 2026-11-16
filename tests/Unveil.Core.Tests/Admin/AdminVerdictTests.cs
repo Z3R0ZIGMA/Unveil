@@ -52,6 +52,32 @@ public class AdminVerdictTests
     }
 
     [Fact]
+    public void Different_sleep_figures_are_explained()
+    {
+        // The real ASUS battery report averages standby and hibernation; the sleep study judges sessions only.
+        var report = AsusReport();
+        var battery = Unveil.Core.Battery.BatteryMerger.Merge([], report.Batteries, new CollectionLog()).Single();
+
+        var v = VerdictEngine.Evaluate(Snapshot([battery], report), admin: Admin(new SleepStudy { Sessions = [Session(8, 2.1)] }));
+
+        Assert.Contains(v.Evidence, f => f.Text.StartsWith("Battery report: while asleep", StringComparison.Ordinal)
+                                         && f.Text.Contains("including hibernation, which uses almost nothing"));
+        Assert.Contains(v.Evidence, f => f.Text.StartsWith("The two sleep figures measure different things", StringComparison.Ordinal)
+                                         && f.Text.Contains("at least 30 minutes") && f.Text.EndsWith("The verdict uses the sleep study.", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void No_sleep_explanation_without_a_sleep_study()
+    {
+        var report = AsusReport();
+        var battery = Unveil.Core.Battery.BatteryMerger.Merge([], report.Batteries, new CollectionLog()).Single();
+
+        var v = VerdictEngine.Evaluate(Snapshot([battery], report));
+
+        Assert.DoesNotContain(v.Evidence, f => f.Text.StartsWith("The two sleep figures", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void Too_little_sleep_is_not_judged()
     {
         var v = VerdictEngine.Evaluate(Snapshot(WithHealth(90)), admin: Admin(new SleepStudy { Sessions = [Session(1, 5.0)] }));

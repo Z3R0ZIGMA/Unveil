@@ -22,6 +22,10 @@ public class KnownOffendersTests
     [InlineData("EPHost", "Antivirus scan")]
     [InlineData("EPSecurityService", "Antivirus scan")]
     [InlineData("ManagedAntivirus", "Antivirus scan")]
+    [InlineData("AdobeCollabSync", "Adobe Acrobat sync")]
+    [InlineData("AnyDesk", "Remote access tool")]
+    [InlineData("TeamViewer", "Remote access tool")]
+    [InlineData("rdpclip", "Remote access tool")]
     public void Known_names_are_matched_case_insensitively(string name, string category)
     {
         Assert.Equal(category, KnownOffenders.Match(name, 1)?.Category);

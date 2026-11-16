@@ -18,6 +18,9 @@ public sealed record EnergyFindingRow(Severity Severity, string Title, string De
 public sealed partial class MainViewModel
 {
     private AdminData? _admin;
+
+    /// <summary>The background load of the energy history and sleep study; the full test waits for it.</summary>
+    private Task? _adminTask;
     private Func<AdminCollector> _createAdmin = () => new AdminCollector();
 
     public ICommand RestartAsAdminCommand { get; private set; } = null!;

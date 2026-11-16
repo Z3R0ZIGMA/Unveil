@@ -143,6 +143,20 @@ public class PowerImpactTests
     }
 
     [Fact]
+    public void Processes_started_by_unveil_are_left_out()
+    {
+        // Unveil (pid 100) runs powercfg (200), which has a console host (300). Chrome (400) is the customer's.
+        static ProcessCounters C(int pid, string name, double cpu, int? parent) => new(pid, name, TimeSpan.FromSeconds(cpu), 0, parent);
+        var result = PowerImpact.Analyze(
+        [
+            At(0, [C(100, "Unveil", 0, 1), C(200, "powercfg", 0, 100), C(300, "conhost", 0, 200), C(400, "chrome", 0, 1)]),
+            At(10, [C(100, "Unveil", 1, 1), C(200, "powercfg", 2, 100), C(300, "conhost", 1, 200), C(400, "chrome", 1, 1)]),
+        ], coreCount: 1, excludePids: new HashSet<int> { 100 });
+
+        Assert.Equal(["chrome"], result.Apps.Select(a => a.Name));
+    }
+
+    [Fact]
     public void Windows_processes_get_a_plain_name_and_a_note()
     {
         var result = PowerImpact.Analyze(

@@ -7,7 +7,8 @@ namespace Unveil.Core.Power;
 /// <param name="Name">Executable name without ".exe", e.g. "chrome".</param>
 /// <param name="CpuTime">Total CPU time used since the process started.</param>
 /// <param name="IoBytes">Total bytes read/written (disk, network and devices) since the process started.</param>
-public sealed record ProcessCounters(int Pid, string Name, TimeSpan CpuTime, long IoBytes);
+/// <param name="ParentPid">The process that started it ("Creating Process ID"), when known.</param>
+public sealed record ProcessCounters(int Pid, string Name, TimeSpan CpuTime, long IoBytes, int? ParentPid = null);
 
 /// <summary>All processes' cumulative counters at one moment.</summary>
 /// <param name="Timestamp">Monotonic time of the reading.</param>
@@ -59,6 +60,7 @@ public sealed class PerfCounterActivitySource : IActivitySource
         var cpu = data["% Processor Time"];
         var pid = data["ID Process"];
         var io = data["IO Data Bytes/sec"];
+        var parent = data.Contains("Creating Process ID") ? data["Creating Process ID"] : null;
         var list = new List<ProcessCounters>(pid.Count);
 
         foreach (InstanceData p in pid.Values)
@@ -72,7 +74,8 @@ public sealed class PerfCounterActivitySource : IActivitySource
             var id = (int)p.RawValue;
             var cpuRaw = cpu.Contains(name) ? cpu[name].RawValue : 0;   // 100 ns units
             var ioRaw = io.Contains(name) ? io[name].RawValue : 0;      // bytes
-            list.Add(new ProcessCounters(id, BaseName(name), TimeSpan.FromTicks(cpuRaw), ioRaw));
+            int? parentId = parent is not null && parent.Contains(name) ? (int)parent[name].RawValue : null;
+            list.Add(new ProcessCounters(id, BaseName(name), TimeSpan.FromTicks(cpuRaw), ioRaw, parentId));
         }
 
         return list;

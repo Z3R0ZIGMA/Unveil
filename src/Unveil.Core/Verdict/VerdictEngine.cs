@@ -55,7 +55,7 @@ public static class VerdictEngine
             };
         }
 
-        AddContext(snapshot, evidence);
+        AddContext(snapshot, evidence, admin);
 
         return Combine(snapshot, battery, drainResult, settings, evidence, settingsActions.Concat(adminResult.Actions).ToList());
     }
@@ -370,7 +370,7 @@ public static class VerdictEngine
     // ---------------------------------------------------------------- context
 
     /// <summary>Information that does not change the verdict but helps the tech.</summary>
-    private static void AddContext(BatterySnapshot snapshot, List<Finding> evidence)
+    private static void AddContext(BatterySnapshot snapshot, List<Finding> evidence, AdminData? admin)
     {
         if (snapshot.Report?.RuntimeEstimates?.AtFullChargeCapacity?.ActiveRuntime is { } now)
         {
@@ -392,7 +392,18 @@ public static class VerdictEngine
         {
             evidence.Add(new Finding(Severity.Neutral,
                 $"Battery report: while asleep on battery ({Duration(asleep.Duration)}) it used {Watts(asleep.AverageWatts, "0.00")}" +
-                (asleep.PercentPerHour is { } pph ? $", about {Percent(pph)} of a full charge per hour." : ".")));
+                (asleep.PercentPerHour is { } pph ? $", about {Percent(pph)} of a full charge per hour" : "") +
+                (usage.AsleepIncludesHibernation ? " (an average over all sleep, including hibernation, which uses almost nothing)." : ".")));
+
+            // Both figures on one page look contradictory (seen: 0.9%/h here, 2.1%/h in the sleep study): say why.
+            if (admin?.Sleep is { JudgedPercentPerHour: not null })
+            {
+                evidence.Add(new Finding(Severity.Neutral,
+                    "The two sleep figures measure different things: the battery report averages all sleep over several days" +
+                    (usage.AsleepIncludesHibernation ? ", including hibernation" : "") +
+                    $", while the sleep study judges only sleep sessions of at least {SleepStudy.MinimumSession.TotalMinutes:0} minutes on battery. " +
+                    "The verdict uses the sleep study."));
+            }
         }
     }
 

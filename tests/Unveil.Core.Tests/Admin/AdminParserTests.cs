@@ -279,4 +279,17 @@ public class EnergyDiagnosticsParserTests
     {
         Assert.Equal(expected, EnergyDiagnosticsParser.ParseSeverity(value));
     }
+
+    [Theory]
+    // Seen on an ASUS B1400: the missing-driver check came with no name.
+    [InlineData("", "Devices with missing or misconfigured drivers can increase power consumption.",
+        "Devices with missing or misconfigured drivers can increase power consumption", "")]
+    [InlineData("", "First sentence. Second sentence.", "First sentence", "Second sentence.")]
+    [InlineData("Individual process with significant processor utilization.", "This process uses a lot.",
+        "Individual process with significant processor utilization", "This process uses a lot.")]
+    [InlineData("  ", "  ", EnergyDiagnosticsParser.UntitledCheck, "")]
+    public void Every_finding_gets_a_title(string name, string description, string expectedName, string expectedDescription)
+    {
+        Assert.Equal((expectedName, expectedDescription), EnergyDiagnosticsParser.Title(name, description));
+    }
 }

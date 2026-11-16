@@ -100,7 +100,7 @@ public sealed partial class MainViewModel
     private void InitTest(Func<DrainTest> createTest)
     {
         _createTest = createTest;
-        RunTestCommand = new AsyncRelayCommand(() => RunTestAsync(), () => Report?.Snapshot.HasBattery == true && Stage == TestStage.Idle && !IsBusy);
+        RunTestCommand = new AsyncRelayCommand(() => RunTestAsync(), () => Report?.Snapshot.HasBattery == true && Stage == TestStage.Idle && !IsBusy && !EnergyRunning);
         SkipUnplugCommand = new RelayCommand(() => _skipUnplug = true, () => Stage == TestStage.WaitingForUnplug);
         CancelTestCommand = new RelayCommand(() => _testCts?.Cancel(), () => Stage != TestStage.Idle);
     }
@@ -220,6 +220,14 @@ public sealed partial class MainViewModel
             StatusText = "Full test: getting ready...";
             var test = _createTest();
             await Task.Run(test.WarmUp, token);
+
+            // The energy history and sleep study run powercfg in the background (admin): let them finish first,
+            // or their work would be measured as part of the laptop's drain.
+            if (_adminTask is { IsCompleted: false } adminTask)
+            {
+                StatusText = "Full test: waiting for the energy history and sleep study to finish...";
+                await adminTask.WaitAsync(token);
+            }
 
             // 3. Measure
             _liveTimer.Stop();

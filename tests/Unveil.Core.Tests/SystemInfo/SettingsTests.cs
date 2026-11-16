@@ -144,6 +144,19 @@ public class SettingsReaderLogicTests
     }
 
     [Theory]
+    // Seen on an ASUS B1400: browsers add an ID to their Run entry.
+    [InlineData("GoogleChromeAutoLaunch_5C2FF7621DCDE1165612C9FAC4225443", null, "GoogleChrome")]
+    [InlineData("MicrosoftEdgeAutoLaunch_4187CBCB2292691730DAD94E6DBD2221", null, "MicrosoftEdge")]
+    [InlineData("GoogleChromeAutoLaunch_5C2FF7621DCDE1165612C9FAC4225443", "Google Chrome", "Google Chrome")]
+    [InlineData("SecurityHealth", "Windows Security notification icon", "Windows Security notification icon")]
+    [InlineData("iTunesHelper", "  ", "iTunesHelper")]
+    [InlineData("App_123", null, "App_123")] // short suffixes are kept
+    public void Startup_entries_get_readable_names(string valueName, string? description, string expected)
+    {
+        Assert.Equal(expected, StartupApps.DisplayName(valueName, description));
+    }
+
+    [Theory]
     [InlineData("00000000-0000-0000-0000-000000000000", PowerMode.Balanced)]
     [InlineData("961cc777-2547-4f9d-8174-7d86181b8a7a", PowerMode.BestPowerEfficiency)]
     [InlineData("3af9b8d9-7c97-431d-ad78-34a8bfea439f", PowerMode.BetterPerformance)]

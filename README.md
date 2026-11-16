@@ -4,7 +4,7 @@
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
 battery is worn out or something on the laptop is draining it.
 
-**Version 0.8.2.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
+**Version 0.8.3.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
 
 - [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
@@ -41,8 +41,10 @@ result with `SHA256SUMS.txt` on the release.
 - **Details > Data notes > Save samples** saves the raw data with serial numbers, names, account IDs and Wi-Fi details
   removed, so support for new laptop models can be added.
 
-RMM and security agents (N-able, ConnectWise, NinjaOne, Datto, Kaseya and others) and antivirus scans are labelled when
-they use a noticeable share of the power.
+RMM and security agents (N-able, ConnectWise, NinjaOne, Datto, Kaseya and others), antivirus scans, Adobe Acrobat's
+background sync and remote-access tools (AnyDesk, TeamViewer, Splashtop, Remote Desktop and others) are labelled when
+they use a noticeable share of the power. Run the full test with nobody connected remotely: a remote session adds to
+the power draw.
 
 Unveil only reads: it never changes settings. Apply the advice yourself, with the customer's agreement.
 

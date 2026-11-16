@@ -17,6 +17,12 @@ public sealed record UsageSummary
 
     public StateUsage? Asleep { get; init; }
 
+    /// <summary>
+    /// True on a Modern Standby laptop whose "asleep" time includes hibernation ("Suspend" periods), which uses
+    /// almost nothing: the average is then much lower than the sleep study's standby-only figure.
+    /// </summary>
+    public bool AsleepIncludesHibernation { get; init; }
+
     public DateTimeOffset? From { get; init; }
 
     public DateTimeOffset? To { get; init; }
@@ -38,6 +44,8 @@ public static class UsageAnalyzer
         {
             InUse = Sum(onBattery.Where(e => e.IsActive).ToList()),
             Asleep = Sum(onBattery.Where(e => e.IsSleep).ToList()),
+            AsleepIncludesHibernation = report?.System.ModernStandby == true
+                && onBattery.Any(e => string.Equals(e.EntryType, "Suspend", StringComparison.OrdinalIgnoreCase)),
             From = entries.Select(e => e.Timestamp).Where(t => t.HasValue).Min(),
             To = entries.Select(e => e.Timestamp).Where(t => t.HasValue).Max(),
         };

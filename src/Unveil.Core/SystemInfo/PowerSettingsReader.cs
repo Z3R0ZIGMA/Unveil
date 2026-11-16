@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Management;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using Unveil.Core.Wmi;
 
@@ -253,8 +254,49 @@ public static class StartupApps
         using var approved = hive.OpenSubKey(approvedPath);
         foreach (var name in key.GetValueNames().Where(n => n.Length > 0))
         {
-            apps.Add(new StartupApp(name, location, IsEnabled(approved?.GetValue(name) as byte[])));
+            var description = Description(key.GetValue(name) as string);
+            apps.Add(new StartupApp(DisplayName(name, description), location, IsEnabled(approved?.GetValue(name) as byte[])));
         }
+    }
+
+    /// <summary>Generic hosts whose description says nothing about the app they start.</summary>
+    private static readonly string[] GenericHosts = ["rundll32", "cmd", "powershell", "pwsh", "wscript", "cscript", "explorer", "conhost", "msiexec"];
+
+    /// <summary>The file description of the exe a Run entry starts, e.g. "Google Chrome"; null when unknown.</summary>
+    private static string? Description(string? command)
+    {
+        if (Power.AppNames.ExePath(Environment.ExpandEnvironmentVariables(command ?? "")) is not { } exe
+            || GenericHosts.Contains(Path.GetFileNameWithoutExtension(exe), StringComparer.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        try
+        {
+            return File.Exists(exe) ? Power.AppNames.Clean(System.Diagnostics.FileVersionInfo.GetVersionInfo(exe).FileDescription) : null;
+        }
+#pragma warning disable CA1031 // Unreadable file: use the entry's name.
+        catch (Exception)
+#pragma warning restore CA1031
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// What to call a Run entry. Its exe's description when there is one ("Google Chrome"); otherwise its name without
+    /// the ID some browsers add: "GoogleChromeAutoLaunch_5C2FF762..." becomes "GoogleChrome".
+    /// </summary>
+    internal static string DisplayName(string valueName, string? description)
+    {
+        if (!string.IsNullOrWhiteSpace(description))
+        {
+            return description.Trim();
+        }
+
+        var name = Regex.Replace(valueName.Trim(), "_[0-9A-Fa-f]{16,}$", "");
+        name = Regex.Replace(name, "AutoLaunch$", "", RegexOptions.IgnoreCase);
+        return name.Length > 0 ? name : valueName;
     }
 
     private static void AddFolder(List<StartupApp> apps, string folder, string location, RegistryKey hive)

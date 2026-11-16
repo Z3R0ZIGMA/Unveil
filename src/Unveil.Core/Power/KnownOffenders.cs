@@ -39,6 +39,18 @@ public static class KnownOffenders
                 // Microsoft Intune, Huntress, ThreatLocker
                 "microsoft.management.services.intunewindowsagent", "agentexecutor", "huntressagent", "huntressrio", "threatlockerservice",
             ]),
+        ("Adobe Acrobat sync",
+            "Adobe Acrobat's background sync (Adobe Collaboration Synchronizer) often keeps the processor and disk busy. Update Acrobat, turn off \"Adobe Acrobat Synchronizer\" under Startup apps, or turn off syncing in Acrobat's preferences if the customer does not use Adobe's cloud documents.",
+            ["adobecollabsync"]),
+        ("Remote access tool",
+            "A remote-access app was running. If someone was connected during the test (including you, running Unveil remotely), the session itself uses a lot of power: run the test with nobody connected. Otherwise quit it when not in use, or stop it starting with Windows if the customer does not need it.",
+            [
+                "anydesk", "teamviewer", "teamviewer_service", "tv_w32", "tv_x64", "rustdesk",
+                // Splashtop Streamer, Chrome Remote Desktop, LogMeIn, Parsec
+                "srservice", "srfeature", "srmanager", "sragent", "remoting_host", "logmein", "logmeinsystray", "lmiguardiansvc", "parsecd",
+                // Windows Remote Desktop: only runs while someone is connected over RDP
+                "rdpclip",
+            ]),
         ("Windows Update", "Windows Update is installing updates. Let it finish while plugged in, then restart.",
             ["tiworker", "trustedinstaller", "wuauclt", "usoclient", "musnotification", "mousocoreworker", "usocoreworker", "wudfhost-update"]),
         ("Crypto miner", "A cryptocurrency miner was running. If the customer did not install it on purpose, treat it as malware and remove it.",

@@ -93,13 +93,17 @@ public static class EnergyDiagnosticsParser
         var findings = entries
             .Where(e => e.Severity != EnergySeverity.Informational)
             .GroupBy(e => e.Guid.Length > 0 ? e.Guid : e.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(g => new EnergyFinding
+            .Select(g =>
             {
-                Guid = g.Key,
-                Severity = g.Min(e => e.Severity),
-                Name = g.First().Name,
-                Description = g.First().Description,
-                Occurrences = g.Select(e => e.Details).ToList(),
+                var (name, description) = Title(g.First().Name, g.First().Description);
+                return new EnergyFinding
+                {
+                    Guid = g.Key,
+                    Severity = g.Min(e => e.Severity),
+                    Name = name,
+                    Description = description,
+                    Occurrences = g.Select(e => e.Details).ToList(),
+                };
             })
             .OrderBy(f => f.Severity)
             .ToList();
@@ -114,6 +118,33 @@ public static class EnergyDiagnosticsParser
             InformationalCount = entries.Count(e => e.Severity == EnergySeverity.Informational),
             Findings = findings,
         };
+    }
+
+    /// <summary>The title is shown before the description, so it never ends in a full stop.</summary>
+    public const string UntitledCheck = "Windows energy check";
+
+    /// <summary>
+    /// A display title for an entry. Some entries come without a name (seen for "Devices with missing or misconfigured
+    /// drivers"): then the description's first sentence becomes the title and the rest stays as the description.
+    /// </summary>
+    internal static (string Name, string Description) Title(string name, string description)
+    {
+        name = name.Trim().TrimEnd('.').TrimEnd();
+        description = description.Trim();
+        if (name.Length > 0)
+        {
+            return (name, description);
+        }
+
+        if (description.Length == 0)
+        {
+            return (UntitledCheck, "");
+        }
+
+        var end = description.IndexOf(". ", StringComparison.Ordinal);
+        return end > 0
+            ? (description[..end], description[(end + 2)..].Trim())
+            : (description.TrimEnd('.'), "");
     }
 
     /// <summary>

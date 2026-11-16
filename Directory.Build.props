@@ -9,6 +9,6 @@
     <DebugType>embedded</DebugType>
     <Company>Unveil</Company>
     <Product>Unveil</Product>
-    <Version>0.8.2</Version>
+    <Version>0.8.3</Version>
   </PropertyGroup>
 </Project>
