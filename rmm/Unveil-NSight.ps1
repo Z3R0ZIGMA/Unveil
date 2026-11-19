@@ -30,7 +30,7 @@
   Also run Windows' 60-second energy diagnostics (adds about a minute).
 
 .PARAMETER Version
-  The Unveil release to use, e.g. 0.9.0. Default "latest". Pin a version to update clients only when you choose.
+  The Unveil release to use, e.g. 0.9.2. Default "latest". Pin a version to update clients only when you choose.
 
 .PARAMETER NoDownload
   Use the Unveil.exe already in the folder; never download.
