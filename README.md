@@ -4,7 +4,7 @@
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
 battery is worn out or something on the laptop is draining it.
 
-**Version 0.9.3.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
+**Version 0.9.4.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
 
 - [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
@@ -36,8 +36,9 @@ result with `SHA256SUMS.txt` on the release.
 - **Export report** saves an HTML report for the customer (printable to PDF) and the JSON data. **Copy summary**
   copies a short text summary for the ticket.
 - **Since the last check:** export a report on every visit. Next time Unveil finds the latest earlier `unveil-*.json`
-  for that laptop (next to Unveil.exe, on the Desktop, in Documents, in Downloads or in the N-sight reports folder)
-  and shows the change in health,
+  for that laptop (next to Unveil.exe, on the Desktop, in Documents, in Downloads or in the N-sight reports folder,
+  which only an administrator can read: use **Restart as administrator** to compare with an N-sight run) and shows the
+  change in health,
   capacity, cycles, verdict and power draw. A replaced battery is recognised. **Compare with a report...** picks one by
   hand.
 - **Details > Data notes > Save samples** saves the raw data with serial numbers, names, account IDs and Wi-Fi details
@@ -53,14 +54,18 @@ Unveil only reads: it never changes settings. Apply the advice yourself, with th
 ## Run it from N-able N-sight RMM
 The script [`rmm/Unveil-NSight.ps1`](rmm/Unveil-NSight.ps1) (also attached to each release) runs Unveil on a laptop
 from N-sight, with no window. Each time it runs it:
-1. downloads `Unveil.exe` from the latest release into `C:\ProgramData\Unveil\` if it has changed, and checks it
-   against the release's `SHA256SUMS.txt`;
-2. runs the whole check as the system account: battery, power settings (the signed-in user's startup apps), energy
+1. makes sure `C:\ProgramData\Unveil\` can only be used by SYSTEM and Administrators. Windows lets every user create
+   files in `C:\ProgramData`, so otherwise a standard user could swap a file that runs as SYSTEM, or read the reports.
+   A folder anyone could change (every folder made by Unveil 0.9.3 and earlier) is moved aside unopened and replaced;
+   the earlier reports are copied across, so "Since the last check" keeps working;
+2. downloads `Unveil.exe` from the latest release if it has changed, and checks it against the release's
+   `SHA256SUMS.txt` before every run. An exe that does not match never runs;
+3. runs the whole check as the system account: battery, power settings (the signed-in user's startup apps), energy
    history and sleep study, and a 60-second test. The test measures watts only if the laptop is on battery at the
    time; plugged in, it ranks the apps by activity only;
-3. saves the full HTML and JSON report in `C:\ProgramData\Unveil\Reports\` (the newest 30 runs are kept, and each
+4. saves the full HTML and JSON report in `C:\ProgramData\Unveil\Reports\` (the newest 30 runs are kept, and each
    report shows "Since the last check");
-4. prints one line for the dashboard, for example
+5. prints one line for the dashboard, for example
    `Battery worn: 66% health, 442 cycles. Test: plugged in, apps only; top: AnyDesk 26%. Sleep: 2.1%/h. Report: unveil-…html`
 
 **Set it up once** (needs a Superuser or Administrator N-sight login):
@@ -74,9 +79,10 @@ from N-sight, with no window. Each time it runs it:
    `C:\ProgramData\Unveil\Reports\` and download the newest `.html`.
 
 **Options** (N-sight's "Command Line" box): `-TestSeconds 60` (0 skips the test), `-EnergyDiagnostics` (Windows'
-60-second energy check), `-Version 0.9.3` (use that release instead of the latest: pin it so clients update only when
+60-second energy check), `-Version 0.9.4` (use that release instead of the latest: pin it so clients update only when
 you choose), `-NoDownload` (use the `Unveil.exe` already in `C:\ProgramData\Unveil\`, e.g. one you copied there with
-File transfer, for laptops that cannot reach github.com), `-Keep 30` (reports to keep), `-ReportOnly` (pass whatever
+File transfer, for laptops that cannot reach github.com: run the script once first so it creates the locked-down
+folder, then copy the exe in), `-Keep 30` (reports to keep), `-ReportOnly` (pass whatever
 Unveil finds; only real failures, 1010-1012, still fail).
 
 **Pass or fail** (N-sight shows a fail for any code above 0; with `-ReportOnly`, 1001-1004 become 0):
@@ -89,7 +95,7 @@ Unveil finds; only real failures, 1010-1012, still fail).
 | 1003 | Replace battery |
 | 1004 | Battery worn or failing **and** software drain |
 | 1010 | Unveil failed (the line says why) |
-| 1011 | Unveil could not be downloaded and no copy is on the laptop |
+| 1011 | Unveil could not be downloaded, or the copy on the laptop does not match `SHA256SUMS.txt` |
 | 1012 | Unveil was blocked (antivirus or Smart App Control) or did not finish in time |
 
 If the antivirus quarantines `Unveil.exe` (it is not code-signed yet), allow `C:\ProgramData\Unveil\` in the Managed
@@ -143,7 +149,7 @@ Windows' battery report also contains the computer name. Unveil does not show it
 - **Samples** (`Details > Data notes > Save samples`): raw data, saved only where the technician chooses, with
   identifying details removed (see below).
 - **Clipboard** (`Copy summary`): a short text summary, when the technician clicks the button.
-- **From N-sight:** `C:\ProgramData\Unveil\` holds `Unveil.exe`, `unveil.json`, `SHA256SUMS.txt`, `last-result.txt`
+- **From N-sight:** `C:\ProgramData\Unveil\` (usable only by SYSTEM and Administrators) holds `Unveil.exe`, `unveil.json`, `SHA256SUMS.txt`, `last-result.txt`
   (the last dashboard line) and `Reports\` (the newest 30 runs' reports; older ones are deleted). Delete the folder to
   remove everything.
 

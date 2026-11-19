@@ -4,8 +4,11 @@
 
 .DESCRIPTION
   N-sight runs this script as Local System with no screen. It:
+    0. makes sure C:\ProgramData\Unveil can only be used by SYSTEM and Administrators (a folder anyone could change
+       is moved aside, unopened, and a new one made, keeping the earlier reports), so no standard user can swap files
+       run as SYSTEM or read the reports;
     1. downloads Unveil.exe from the Unveil GitHub release into C:\ProgramData\Unveil (only when it has changed),
-       and checks it against the release's SHA256SUMS.txt;
+       and checks it against the release's SHA256SUMS.txt before every run; an exe that does not match never runs;
     2. runs "Unveil.exe --rmm", which checks the battery, the power settings, the energy history and sleep study,
        and runs the live test (watts only when the laptop is on battery; otherwise app activity only);
     3. saves the full HTML and JSON report in C:\ProgramData\Unveil\Reports (the newest 30 runs are kept);
@@ -16,7 +19,7 @@
          1003  replace battery
          1004  battery worn or failing AND software drain
          1010  Unveil failed (the line says why)
-         1011  Unveil could not be downloaded and no copy is on the laptop
+         1011  Unveil could not be downloaded, or the copy on the laptop does not match SHA256SUMS.txt
          1012  Unveil was blocked, or did not finish in time
 
   Unveil itself makes no network connections; only this script downloads, from the Unveil releases page.
@@ -73,50 +76,161 @@ function Finish([int]$Code, [string]$Text) {
 $exe = Join-Path $Folder 'Unveil.exe'
 $reports = Join-Path $Folder 'Reports'
 $resultFile = Join-Path $Folder 'last-result.txt'
+$sumsFile = Join-Path $Folder 'SHA256SUMS.txt'
 
-try {
-    New-Item -ItemType Directory -Force -Path $Folder | Out-Null
-} catch {
-    Finish 1010 "Unveil: cannot create $Folder ($($_.Exception.Message))"
+# ------------------------------------------------------------------ 0. a folder only SYSTEM and Administrators can use
+# N-sight runs this as Local System. C:\ProgramData lets every user create folders and files, so a standard user could
+# create the folder first, or drop a file (a DLL, a fake Unveil.exe) next to the exe and have it run as SYSTEM. So the
+# folder must belong to SYSTEM/Administrators with no other access (that also keeps the reports private). A folder that
+# is not like that is moved aside unopened (it may hold links that point elsewhere) and a new one is made; only plain
+# earlier report files are copied over, so "Since the last check" keeps working.
+$Trusted = @('S-1-5-18', 'S-1-5-32-544')   # Local System, Administrators
+
+function Test-Elevated {
+    $id = [Security.Principal.WindowsIdentity]::GetCurrent()
+    return ([Security.Principal.WindowsPrincipal]$id).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function Test-SecureFolder([string]$Path) {
+    try {
+        $item = Get-Item -LiteralPath $Path -Force
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return $false }   # a junction or link
+        $acl = Get-Acl -LiteralPath $Path
+        if (-not $acl.AreAccessRulesProtected) { return $false }                        # inherits ProgramData's access
+        if ($Trusted -notcontains $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value) { return $false }
+        foreach ($rule in $acl.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier])) {
+            if ($Trusted -notcontains $rule.IdentityReference.Value) { return $false }
+        }
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function New-SecureFolder([string]$Path) {
+    $security = New-Object Security.AccessControl.DirectorySecurity
+    $security.SetAccessRuleProtection($true, $false)
+    foreach ($sid in $Trusted) {
+        $rule = New-Object Security.AccessControl.FileSystemAccessRule(
+            (New-Object Security.Principal.SecurityIdentifier $sid), 'FullControl', 'ContainerInherit, ObjectInherit', 'None', 'Allow')
+        $security.AddAccessRule($rule)
+    }
+    # Created with its permissions in one step, so nobody can add a file in between.
+    if ($PSVersionTable.PSVersion.Major -le 5) {
+        [void][IO.Directory]::CreateDirectory($Path, $security)                              # Windows PowerShell
+    } else {
+        [void][IO.FileSystemAclExtensions]::Create((New-Object IO.DirectoryInfo $Path), $security)   # PowerShell 7
+    }
+}
+
+# Copies earlier reports out of a folder that was moved aside: only plain unveil-*.json/.html files (no links, no
+# subfolders), as new files in the new folder, so nothing from the old folder keeps its old permissions.
+function Copy-EarlierReports([string]$From, [string]$To) {
+    try {
+        $old = Get-Item -LiteralPath $From -Force -ErrorAction Stop
+        if ($old.Attributes -band [IO.FileAttributes]::ReparsePoint) { return }
+        New-Item -ItemType Directory -Force -Path $To | Out-Null
+        Get-ChildItem -LiteralPath $From -File -Force |
+            Where-Object { $_.Name -match '^unveil-[\w.-]+\.(json|html)$' -and -not ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -and $_.Length -lt 50MB } |
+            Sort-Object LastWriteTimeUtc -Descending | Select-Object -First ([Math]::Max(1, $Keep) * 2) |
+            ForEach-Object {
+                $target = Join-Path $To $_.Name
+                [IO.File]::WriteAllBytes($target, [IO.File]::ReadAllBytes($_.FullName))
+                (Get-Item -LiteralPath $target).LastWriteTimeUtc = $_.LastWriteTimeUtc
+            }
+    } catch {
+        # Earlier reports are a convenience: carry on without them.
+    }
+}
+
+$movedAside = $null
+if (Test-Elevated) {
+    try {
+        if ((Test-Path -LiteralPath $Folder) -and -not (Test-SecureFolder $Folder)) {
+            $aside = "$Folder.untrusted-$([DateTime]::UtcNow.ToString('yyyyMMddHHmmss'))"
+            [IO.Directory]::Move($Folder, $aside)
+            $movedAside = $aside
+        }
+        if (-not (Test-Path -LiteralPath $Folder)) { New-SecureFolder $Folder }
+        if (-not (Test-SecureFolder $Folder)) { throw "its permissions could not be set to SYSTEM and Administrators only" }
+        if ($movedAside) {
+            Copy-EarlierReports (Join-Path $movedAside 'Reports') $reports
+            # Best effort: rd removes links themselves and never follows them.
+            & $env:ComSpec /c rd /s /q "`"$movedAside`"" 2>$null | Out-Null
+        }
+    } catch {
+        Finish 1010 "Unveil: cannot secure $Folder ($($_.Exception.Message))"
+    }
+} else {
+    # Run by a standard user (a test): nothing runs with more rights than they have, so an ordinary folder is fine.
+    try {
+        New-Item -ItemType Directory -Force -Path $Folder | Out-Null
+    } catch {
+        Finish 1010 "Unveil: cannot create $Folder ($($_.Exception.Message))"
+    }
+}
+
+function Get-ExpectedHash([string]$Asset) {
+    if (-not (Test-Path -LiteralPath $sumsFile -PathType Leaf)) { return $null }
+    $line = Get-Content -LiteralPath $sumsFile | Where-Object { $_ -match "^([0-9a-fA-F]{64})\s+\*?$([regex]::Escape($Asset))\s*$" } | Select-Object -First 1
+    if (-not $line) { return $null }
+    return ($line -split '\s+')[0].ToLowerInvariant()
+}
+
+$arch = $env:PROCESSOR_ARCHITEW6432
+if (-not $arch) { $arch = $env:PROCESSOR_ARCHITECTURE }
+$asset = if ($arch -eq 'ARM64') { 'Unveil-arm64.exe' } else { 'Unveil.exe' }
+
 # ------------------------------------------------------------------ 1. get Unveil.exe
+$downloadError = $null
 if (-not $NoDownload) {
-    $arch = $env:PROCESSOR_ARCHITEW6432
-    if (-not $arch) { $arch = $env:PROCESSOR_ARCHITECTURE }
-    $asset = if ($arch -eq 'ARM64') { 'Unveil-arm64.exe' } else { 'Unveil.exe' }
     $base = if ($Version -eq 'latest') { "https://github.com/$Repo/releases/latest/download" }
             else { "https://github.com/$Repo/releases/download/v$($Version.TrimStart('v'))" }
 
     try {
         [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
-        $sumsFile = Join-Path $Folder 'SHA256SUMS.txt'
-        Invoke-WebRequest -UseBasicParsing -Uri "$base/SHA256SUMS.txt" -OutFile $sumsFile -TimeoutSec 60
-        $line = Get-Content $sumsFile | Where-Object { $_ -match "^([0-9a-fA-F]{64})\s+\*?$([regex]::Escape($asset))\s*$" } | Select-Object -First 1
-        if (-not $line) { throw "$asset is not listed in SHA256SUMS.txt" }
-        $expected = ($line -split '\s+')[0].ToLowerInvariant()
+        $sumsDownload = "$sumsFile.download"
+        Invoke-WebRequest -UseBasicParsing -Uri "$base/SHA256SUMS.txt" -OutFile $sumsDownload -TimeoutSec 60
+        Move-Item -LiteralPath $sumsDownload -Destination $sumsFile -Force
+        $expected = Get-ExpectedHash $asset
+        if (-not $expected) { throw "$asset is not listed in SHA256SUMS.txt" }
 
-        $current = if (Test-Path $exe) { (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() } else { '' }
+        $current = if (Test-Path -LiteralPath $exe) { (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant() } else { '' }
         if ($current -ne $expected) {
             $download = "$exe.download"
             Invoke-WebRequest -UseBasicParsing -Uri "$base/$asset" -OutFile $download -TimeoutSec 600
-            $got = (Get-FileHash $download -Algorithm SHA256).Hash.ToLowerInvariant()
+            $got = (Get-FileHash -LiteralPath $download -Algorithm SHA256).Hash.ToLowerInvariant()
             if ($got -ne $expected) {
-                Remove-Item $download -Force -ErrorAction SilentlyContinue
+                Remove-Item -LiteralPath $download -Force -ErrorAction SilentlyContinue
                 throw "the downloaded file does not match SHA256SUMS.txt"
             }
-            Move-Item $download $exe -Force
+            Move-Item -LiteralPath $download -Destination $exe -Force
         }
     } catch {
-        if (-not (Test-Path $exe)) {
-            Finish 1011 "Unveil could not be downloaded ($($_.Exception.Message)). Check that github.com is reachable, or copy Unveil.exe to $Folder and use -NoDownload."
-        }
-        # A copy is already here: use it.
+        # A copy from an earlier run may still be used, but only if it matches the checksums saved with it (below).
+        $downloadError = $_.Exception.Message
     }
 }
 
-if (-not (Test-Path $exe)) {
+if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) {
+    if ($downloadError) {
+        Finish 1011 "Unveil could not be downloaded ($downloadError). Check that github.com is reachable, or copy Unveil.exe to $Folder and use -NoDownload."
+    }
+    if ($movedAside) {
+        Finish 1011 "$Folder could be changed by any user, so it was replaced by a locked-down one. Copy Unveil.exe into it again, or run without -NoDownload."
+    }
     Finish 1011 "Unveil.exe is not in $Folder. Copy it there, or run without -NoDownload."
+}
+
+# Check the exe on every run, not only after a download. With -NoDownload and no checksum file (an exe copied in by
+# hand), the folder's permissions are what protect it: only SYSTEM and Administrators can put a file there.
+$expected = Get-ExpectedHash $asset
+if ($expected) {
+    if ((Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
+        Finish 1011 "Unveil.exe in $Folder does not match SHA256SUMS.txt, so it was not run.$(if ($downloadError) { " The download failed: $downloadError" })"
+    }
+} elseif (-not $NoDownload) {
+    Finish 1011 "Unveil could not be checked: no SHA256SUMS.txt$(if ($downloadError) { " ($downloadError)" }). Check that github.com is reachable."
 }
 
 # Files downloaded by a browser carry a "from the internet" mark that makes SmartScreen check them. This copy

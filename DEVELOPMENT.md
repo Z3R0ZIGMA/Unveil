@@ -51,9 +51,23 @@ Test it as a standard user:
 powershell -ExecutionPolicy Bypass -File rmm\Unveil-NSight.ps1 -Folder <folder with a built Unveil.exe> -NoDownload -TestSeconds 10
 ```
 To test it as N-sight runs it (Local System, no desktop), register a temporary scheduled task as `SYSTEM` that runs the
-script with `-NoDownload` and writes its output to a file, start it, then unregister it. That needs one elevated
-PowerShell (UAC). Things that only show up as SYSTEM: per-user settings come from the signed-in user
-(`ConsoleUser`), the admin checks run, and no window or dialog may ever appear.
+script and writes its output to a file, start it, then unregister it. That needs one elevated PowerShell (UAC).
+Things that only show up as SYSTEM: per-user settings come from the signed-in user (`ConsoleUser`), the admin checks
+run, no window or dialog may ever appear, and the folder lockdown below. To check the lockdown, first create the
+folder as a standard user with an extra file and a junction in `Reports`: the run must move it aside, follow no link,
+copy only plain `unveil-*` reports, and leave a folder owned by SYSTEM with only SYSTEM and Administrators in its
+permissions.
+
+**Security rules for the script (0.9.4):**
+- `C:\ProgramData` lets every user create files and folders, so the script keeps `C:\ProgramData\Unveil` owned by
+  SYSTEM/Administrators with only their access (`Test-SecureFolder` / `New-SecureFolder`). A folder that is not like
+  that (every folder made by 0.9.3 and earlier) is moved aside without opening it: it may contain junctions or hard
+  links, so never reset permissions or recurse into it as SYSTEM. Only plain `unveil-*.json/.html` reports are copied
+  across as new files (`Copy-EarlierReports`), then the old folder is removed with `rd /s /q`, which never follows links.
+- `Unveil.exe` is checked against `SHA256SUMS.txt` before every run, not only after a download; a failed download
+  only falls back to a copy that matches the saved checksums.
+- A standard user can no longer read `Reports`, so the app's "Since the last check" finds N-sight reports only when
+  it runs as administrator. Its folder search already skips folders it cannot read.
 
 The script's `-ReportOnly` switch turns the finding codes 1001-1004 into 0, for N-sight Automated Tasks. Keep the
 script plain ASCII (N-sight stores and runs it as uploaded).
