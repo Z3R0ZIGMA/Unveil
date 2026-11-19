@@ -429,3 +429,6 @@ FodyWeavers.xsd
 
 # Release output (build/publish.ps1)
 dist/
+
+# Claude Code project rules: kept on this laptop only
+CLAUDE.md

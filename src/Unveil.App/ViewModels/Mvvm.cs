@@ -4,7 +4,7 @@ using System.Windows.Input;
 
 namespace Unveil.App.ViewModels;
 
-/// <summary>Minimal INotifyPropertyChanged base (no third-party MVVM library, per CLAUDE.md).</summary>
+/// <summary>Minimal INotifyPropertyChanged base (no third-party MVVM library: see DEVELOPMENT.md, runtime libraries).</summary>
 public abstract class ObservableObject : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;

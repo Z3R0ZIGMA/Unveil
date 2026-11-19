@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <!--
-    Publish settings live here, not in a .pubxml (see CLAUDE.md).
+    Publish settings live here, not in a .pubxml (see DEVELOPMENT.md).
     `dotnet publish src/Unveil.App -c Release -r win-x64` (or win-arm64) produces one self-contained Unveil.exe.
   -->
   <PropertyGroup>

@@ -111,5 +111,5 @@ The `SamplesAreScrubbed` test checks every sample; never weaken it.
 
 ## Where the rules came from
 [plan.md](plan.md) is the original spec. "Changes since the plan" at its top lists what changed during the build.
-[CLAUDE.md](CLAUDE.md) holds the detailed rules learned in each phase (battery data quirks, verdict thresholds, Power
-Impact, SRUM formats, power settings sources).
+The detailed rules learned in each phase (battery data quirks, verdict thresholds, Power Impact, SRUM formats, power
+settings sources) are explained in the code comments next to the code they apply to.
