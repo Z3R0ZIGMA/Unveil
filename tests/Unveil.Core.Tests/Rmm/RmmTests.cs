@@ -103,6 +103,27 @@ public class RmmTests
         Assert.Contains("Test: plugged in, apps only.", RmmSummary.Line(doc, null));
     }
 
+    [Theory]
+    [InlineData(0.2, 0.0, false)]  // same day, no change: left out
+    [InlineData(0.2, -1.0, true)]  // same day, a real change: kept
+    [InlineData(7, 0.0, true)]     // a week later, stable: kept ("0.0 pts" is news)
+    public void Comparison_is_left_out_when_it_says_nothing(double days, double change, bool shown)
+    {
+        var doc = ReportDocument.Create(Snapshot(WithHealth(88)), generatedAt: Now) with
+        {
+            Comparison = new ReportComparison
+            {
+                Match = ComparisonMatch.SameBattery,
+                PreviousGeneratedAt = Now.AddDays(-days),
+                Days = days,
+                Batteries = [new BatteryChange { Index = 1, HealthChange = change }],
+                Summary = "",
+            },
+        };
+
+        Assert.Equal(shown, RmmSummary.Line(doc, null).Contains("pts.", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void Retention_keeps_the_newest_runs()
     {

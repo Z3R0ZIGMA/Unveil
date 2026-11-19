@@ -38,11 +38,17 @@
 .PARAMETER Keep
   How many runs' reports to keep. Default 30.
 
+.PARAMETER ReportOnly
+  Always pass (exit 0) when Unveil ran, whatever it found; the line still gives the verdict. For Automated Tasks,
+  where you only want the result. Real failures (1010-1012) still fail. Leave it off for Script Checks, so a battery
+  or drain problem raises an alert.
+
 .PARAMETER Folder
   Where Unveil.exe and the Reports folder live. Default C:\ProgramData\Unveil.
 
 .EXAMPLE
-  N-sight "Command Line" box:  -TestSeconds 60 -EnergyDiagnostics -Version 0.9.0
+  N-sight "Command Line" box:  -TestSeconds 60 -EnergyDiagnostics -Version 0.9.2
+  Automated Task that should show green when it ran:  -ReportOnly
 #>
 param(
     [int]$TestSeconds = 60,
@@ -50,6 +56,7 @@ param(
     [string]$Version = 'latest',
     [switch]$NoDownload,
     [int]$Keep = 30,
+    [switch]$ReportOnly,
     [string]$Folder = (Join-Path $env:ProgramData 'Unveil')
 )
 
@@ -138,4 +145,7 @@ if (-not $process.WaitForExit($limit * 1000)) {
 # ------------------------------------------------------------------ 3. report back to N-sight
 $code = $process.ExitCode
 $text = if (Test-Path $resultFile) { (Get-Content $resultFile -Raw).Trim() } else { "Unveil ended with code $code without a result." }
+
+# -ReportOnly: a finding (1001-1004) is a result, not a failure of the task.
+if ($ReportOnly -and $code -ge 1001 -and $code -le 1004) { $code = 0 }
 Finish $code $text

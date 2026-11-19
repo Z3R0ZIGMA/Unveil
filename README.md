@@ -4,7 +4,7 @@
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
 battery is worn out or something on the laptop is draining it.
 
-**Version 0.9.1.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
+**Version 0.9.2.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
 
 - [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
@@ -64,18 +64,20 @@ from N-sight, with no window. Each time it runs it:
 **Set it up once** (needs a Superuser or Administrator N-sight login):
 1. **Settings > Script Manager > New**: upload `Unveil-NSight.ps1`, name it (e.g. "Unveil battery check") and set
    the timeout to **360 seconds** (450 with `-EnergyDiagnostics`).
-2. **One laptop, now:** on the device, add the script as an **Automated Task** and run it. The line appears in the
-   task's output.
-3. **Ongoing:** add it to laptops as a **Script Check** (for example daily). A pass shows green, with the line.
+2. **One laptop, now:** on the device, add the script as an **Automated Task** with `-ReportOnly` in the Command Line
+   box, and run it. The task shows green when Unveil ran, and the line in its output gives the verdict.
+3. **Ongoing:** add it to laptops as a **Script Check** (for example daily), without `-ReportOnly`. A healthy laptop
+   shows green; a battery or drain problem fails the check (red), so it can raise an alert.
 4. **Full report:** **Remote Background > Advanced features > File transfer**, browse to
    `C:\ProgramData\Unveil\Reports\` and download the newest `.html`.
 
 **Options** (N-sight's "Command Line" box): `-TestSeconds 60` (0 skips the test), `-EnergyDiagnostics` (Windows'
-60-second energy check), `-Version 0.9.0` (use that release instead of the latest: pin it so clients update only when
+60-second energy check), `-Version 0.9.2` (use that release instead of the latest: pin it so clients update only when
 you choose), `-NoDownload` (use the `Unveil.exe` already in `C:\ProgramData\Unveil\`, e.g. one you copied there with
-File transfer, for laptops that cannot reach github.com), `-Keep 30` (reports to keep).
+File transfer, for laptops that cannot reach github.com), `-Keep 30` (reports to keep), `-ReportOnly` (pass whatever
+Unveil finds; only real failures, 1010-1012, still fail).
 
-**Pass or fail** (N-sight shows a fail for any code above 0):
+**Pass or fail** (N-sight shows a fail for any code above 0; with `-ReportOnly`, 1001-1004 become 0):
 
 | Code | Result |
 |---|---|

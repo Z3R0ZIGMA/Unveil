@@ -140,7 +140,9 @@ public static class RmmSummary
             parts.Add($"Sleep: {Percent(rate)}/h.");
         }
 
-        if (doc.Comparison is { Match: ComparisonMatch.SameBattery, Batteries: [{ HealthChange: { } change }, ..] } comparison)
+        // A report from earlier the same day with no real change says nothing: leave the space for the rest.
+        if (doc.Comparison is { Match: ComparisonMatch.SameBattery, Batteries: [{ HealthChange: { } change }, ..] } comparison
+            && (comparison.Days >= 1 || Math.Abs(change) >= 0.5))
         {
             parts.Add($"Since {Date(comparison.PreviousGeneratedAt)}: {ReportComparer.Signed(change)} pts.");
         }
