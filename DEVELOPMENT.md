@@ -14,6 +14,11 @@ dotnet run --project src/Unveil.App
 `dotnet test` builds only the Core library and its tests. Run `dotnet build src/Unveil.App` before taking screenshots
 of the app.
 
+GitHub runs the same build and tests, and checks that `rmm/Unveil-NSight.ps1` is plain ASCII and parses, on every
+push to `main` and every pull request (`.github/workflows/ci.yml`; actions are pinned to commits). Dependabot
+(`.github/dependabot.yml`) proposes NuGet and Actions updates weekly, staying on the .NET 10 packages. `global.json`
+pins the SDK, and `.gitattributes` sets the line endings.
+
 ## Release
 ```
 powershell -ExecutionPolicy Bypass -File build\publish.ps1

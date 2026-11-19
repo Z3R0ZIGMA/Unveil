@@ -8,6 +8,7 @@ battery is worn out or something on the laptop is draining it.
 
 - [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
+- [SECURITY.md](SECURITY.md): how to report a security problem.
 - [plan.md](plan.md): the original spec, with the changes made during the build at the top.
 
 ## Requirements

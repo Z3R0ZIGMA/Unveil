@@ -1,0 +1,20 @@
+# Security policy
+
+## Supported versions
+Only the latest release gets security fixes. The N-sight script downloads the latest release unless it is pinned with
+`-Version`, so update a pinned version when a fix is released.
+
+## Reporting a vulnerability
+Please report it privately: on GitHub, **Security > Report a vulnerability** on this repository. Don't open a public
+issue. Say what is affected (the app, the N-sight script, the reports), how to reproduce it, and the version.
+
+You should get a reply within a week. Fixes are released as a new version, with the issue described in the release
+notes once the release is out.
+
+## How Unveil is meant to run
+- The app runs as a standard user and only reads; it asks for administrator rights (UAC) only when the technician
+  clicks **Restart as administrator**. It makes no network connections (see the README's Privacy section).
+- From N-able N-sight it runs as Local System through `rmm/Unveil-NSight.ps1`, which downloads `Unveil.exe` from this
+  project's releases into `C:\ProgramData\Unveil` and checks it against the release's `SHA256SUMS.txt`.
+- Releases are built from this repository by `build/publish.ps1`; each release lists the SHA-256 of every file. The
+  exes are not code-signed yet.
