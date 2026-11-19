@@ -50,7 +50,10 @@ Double-click Unveil.exe. Nothing to install; all data stays on the laptop.
 - Export report: saves an HTML report for the customer (and the JSON data).
 - Copy summary: a short text summary for the ticket.
 - Export a report on every visit: next time Unveil finds the earlier .json (next to Unveil.exe, on the
-  Desktop, in Documents or in Downloads) and shows how the battery has changed since.
+  Desktop, in Documents, in Downloads or in C:\ProgramData\Unveil\Reports) and shows how the battery has
+  changed since.
+- From N-able N-sight RMM: use Unveil-NSight.ps1 from the releases page. See "Run it from N-able N-sight
+  RMM" in https://github.com/Z3R0ZIGMA/Unveil#run-it-from-n-able-n-sight-rmm
 - Details > Data notes > Save samples: scrubbed raw data (no serials, names or network IDs) to improve
   support for new laptop models.
 

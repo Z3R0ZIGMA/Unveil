@@ -32,6 +32,10 @@ is not code-signed, so SmartScreen can still warn about a new download in some c
 gh release create v<version> (Get-ChildItem dist\Unveil-<version>\github\*).FullName --title "Unveil <version>" --notes-file <notes.md>
 ```
 
+The version comes from `Directory.Build.props`. Commit before running `publish.ps1`, so the exe's version label
+(`0.9.2+<commit>`) names the commit it was built from. The publish settings (self-contained, single file, both
+runtimes) live in `src/Unveil.App/Unveil.App.csproj`, never in a `.pubxml`.
+
 ## N-sight RMM mode
 `Unveil.exe --rmm [--test-seconds N] [--energy] [--out <folder>] [--result <file>] [--keep N]` runs the whole check with
 no window and returns the result as the exit code (see README.md for the codes). `Program.Main` handles it before any
@@ -46,8 +50,8 @@ script with `-NoDownload` and writes its output to a file, start it, then unregi
 PowerShell (UAC). Things that only show up as SYSTEM: per-user settings come from the signed-in user
 (`ConsoleUser`), the admin checks run, and no window or dialog may ever appear.
 
-The version comes from `Directory.Build.props`. The publish settings (self-contained, single file, both runtimes) live
-in `src/Unveil.App/Unveil.App.csproj`, never in a `.pubxml`.
+The script's `-ReportOnly` switch turns the finding codes 1001-1004 into 0, for N-sight Automated Tasks. Keep the
+script plain ASCII (N-sight stores and runs it as uploaded).
 
 ## Checking the UI without clicking around
 `Unveil.exe --screenshot <file.png>` renders the whole dashboard, with real data, to a PNG and exits. Add any of:
@@ -69,7 +73,9 @@ src/Unveil.Core/          data collection, parsing, verdict and reports (no UI c
   Rmm/                    the no-window N-sight mode: options, exit codes, the one-line result, report retention
   Config/                 unveil.json model, loader and validation
   Reports/                JSON export, HTML report, ticket summary, comparison with an earlier report
-src/Unveil.App/           Unveil.exe: WPF app (MVVM without libraries), Themes/Theme.xaml, Controls/ (gauge, charts)
+src/Unveil.App/           Unveil.exe: Program.cs (entry point, --rmm), WPF app (MVVM without libraries), Themes/Theme.xaml,
+                          Controls/ (gauge, charts)
+rmm/Unveil-NSight.ps1     the script N-sight runs (downloads, runs and reports back)
 tests/Unveil.Core.Tests/  xUnit tests and synthetic fixtures
 samples/                  real, scrubbed outputs from test laptops
 build/publish.ps1         release build
@@ -77,8 +83,11 @@ assets/                   the app icon and the script that draws it
 ```
 
 ## Ground rules
-- **No network calls and no telemetry**, ever. See the Privacy section of [README.md](README.md#privacy), and keep it accurate when you change
-  what Unveil reads or writes.
+- **No network calls and no telemetry** in Unveil, ever. The only download is the N-sight script fetching the release.
+  See the Privacy section of [README.md](README.md#privacy), and keep it accurate when you change what Unveil reads or
+  writes.
+- **Edit text files as UTF-8.** Windows PowerShell 5.1's `Get-Content`/`Set-Content` read UTF-8 files without a BOM
+  as ANSI and garble characters such as "—" and "…" (it happened once to plan.md and README.md).
 - **Read only.** Unveil never changes settings on the laptop.
 - **Degrade gracefully.** Every collector catches its own failures, writes them to the `CollectionLog` and carries on.
   A desktop, a VM or missing battery data must never crash the app. `powercfg` calls always have a timeout.

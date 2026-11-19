@@ -1,4 +1,4 @@
-﻿# Unveil â€” Laptop Battery Diagnostic Tool
+# Unveil — Laptop Battery Diagnostic Tool
 
 *See what's really draining your battery.*
 
@@ -55,8 +55,8 @@ Unveil is a portable Windows tool. A tech can run it from a USB stick or push it
 ### 3.1 Battery identity
 | Field | Source |
 |---|---|
-| Manufacturer | WMI `root\wmi` â†’ `BatteryStaticData.ManufactureName`; fallback: battery report XML |
-| Battery name / model / part no. | `BatteryStaticData.DeviceName` (often contains the FRU/part number, e.g. Lenovo `5B10â€¦`, Dell `0WRDWâ€¦`) |
+| Manufacturer | WMI `root\wmi` → `BatteryStaticData.ManufactureName`; fallback: battery report XML |
+| Battery name / model / part no. | `BatteryStaticData.DeviceName` (often contains the FRU/part number, e.g. Lenovo `5B10…`, Dell `0WRDW…`) |
 | Serial number | `BatteryStaticData.SerialNumber` |
 | Chemistry | `BatteryStaticData.Chemistry` (decode: LION, LiP, NiMH, etc.) |
 | Manufacture date | `BatteryStaticData.ManufactureDate` or battery report |
@@ -69,8 +69,8 @@ Note: many OEMs do not expose a true replacement part number. Show what is avail
 |---|---|
 | Design capacity (mWh) | `BatteryStaticData.DesignedCapacity` |
 | Full charge capacity (mWh) | `BatteryFullChargedCapacity.FullChargedCapacity` |
-| **Health %** | `FullCharge / Design Ã— 100` |
-| **Wear %** | `100 âˆ’ Health` |
+| **Health %** | `FullCharge / Design × 100` |
+| **Wear %** | `100 − Health` |
 | Cycle count | `BatteryCycleCount.CycleCount` (may be 0 or unsupported on some OEMs; show "Not reported") |
 | Current charge (mWh and %) | `BatteryStatus.RemainingCapacity` |
 | Voltage | `BatteryStatus.Voltage` |
@@ -88,15 +88,15 @@ If WMI and the battery report disagree, prefer the battery report and log the di
 
 ### 3.3 Runtime and drain
 - **Live discharge rate.** This works only on battery power. Prompt the tech to unplug AC, then sample `DischargeRate` every 2 s for 60 s and average the samples.
-- **Estimated runtime at 100%** = FullChargeCapacity Ã· average discharge rate
-- **Estimated runtime if the battery were new** = DesignCapacity Ã· average discharge rate
+- **Estimated runtime at 100%** = FullChargeCapacity ÷ average discharge rate
+- **Estimated runtime if the battery were new** = DesignCapacity ÷ average discharge rate
 - Classify the drain rate against the machine class. Defaults, configurable:
-  - Ultrabook idle/light: < 8 W normal, 8â€“15 W elevated, > 15 W high
+  - Ultrabook idle/light: < 8 W normal, 8–15 W elevated, > 15 W high
   - Standard / gaming laptop thresholds go in config
 
 ### 3.4 Power-hungry processes
 **Live (no admin):**
-- Sample all processes for 30â€“60 s: CPU % (normalised to core count), GPU % (`GPU Engine` perf counters, summed per PID), disk I/O and network I/O.
+- Sample all processes for 30–60 s: CPU % (normalised to core count), GPU % (`GPU Engine` perf counters, summed per PID), disk I/O and network I/O.
 - Compute a weighted **"Power Impact" score** per process. Show the top 15.
 - Group by app (e.g. all `chrome.exe` / `msedge.exe` children combined) and expand for detail.
 - Flag known offenders: browsers with many tabs, Teams, OneDrive syncing, Windows Search indexer, antivirus scans, Windows Update / `TiWorker`, crypto miners, RGB/OEM utilities.
@@ -127,8 +127,8 @@ Combine everything into one plain-English verdict with a traffic-light colour.
 
 | Health % | Label |
 |---|---|
-| â‰¥ 80% | Good |
-| 60â€“79% | Worn |
+| ≥ 80% | Good |
+| 60–79% | Worn |
 | < 60% | **Replace** |
 
 Additional replace triggers: cycle count above the OEM rating (default 500, configurable), Windows reporting the battery as needing service, or full charge capacity dropping more than 10% within 30 days in the capacity history.
@@ -136,10 +136,10 @@ Additional replace triggers: cycle count above the OEM rating (default 500, conf
 **Drain assessment:** "Elevated" when the discharge rate is above the threshold, or one process or app accounts for more than 25% of the impact score while the machine is supposedly idle.
 
 **Final verdict:**
-1. Battery OK + drain normal â†’ "Battery healthy. Runtime is in line with usage."
-2. Battery OK + drain elevated â†’ "**Software/settings issue.** Battery is fine; these apps/settings are draining it: â€¦"
-3. Battery worn/replace + drain normal â†’ "**Replace battery.** It holds X% of its original capacity."
-4. Battery worn/replace + drain elevated â†’ "**Both.** Replace the battery AND address: â€¦"
+1. Battery OK + drain normal → "Battery healthy. Runtime is in line with usage."
+2. Battery OK + drain elevated → "**Software/settings issue.** Battery is fine; these apps/settings are draining it: …"
+3. Battery worn/replace + drain normal → "**Replace battery.** It holds X% of its original capacity."
+4. Battery worn/replace + drain elevated → "**Both.** Replace the battery AND address: …"
 
 Every verdict lists the evidence behind it and the recommended actions (e.g. "Set power mode to Balanced", "Disable 6 startup apps", "Teams used 38% of power during the test").
 
@@ -152,7 +152,7 @@ Single window with:
 - **Capacity history chart:** from the battery report
 - **Power hogs table:** Live tab / Last 24h tab / Sleep tab
 - **Settings card:** power plan, brightness, refresh rate, battery saver, startup apps, with warnings highlighted
-- **Buttons:** Run Full Test (guided: unplug â†’ 60 s sample â†’ results), Restart as Admin, Export Report, Copy Summary
+- **Buttons:** Run Full Test (guided: unplug → 60 s sample → results), Restart as Admin, Export Report, Copy Summary
 
 ### 5.1 Theme (dark mode, matches the Unbound app)
 
@@ -191,7 +191,7 @@ Rules:
 
 - **HTML report** (single self-contained file, printable to PDF) branded with a configurable company name/logo. It has a customer-friendly summary at the top and the technical detail below.
 - **JSON export** of all raw data, for history and comparison
-- **Copy Summary:** 5â€“8 line plain-text summary for pasting into a ticket (e.g. PSA/helpdesk)
+- **Copy Summary:** 5–8 line plain-text summary for pasting into a ticket (e.g. PSA/helpdesk)
 - **Comparison:** load a previous JSON for the same battery serial and show the change in health % and capacity
 
 ## 7. CLI mode (for RMM / remote use)
@@ -211,14 +211,14 @@ Unveil.exe --cli [--sample 60] [--admin-checks] [--out C:\Temp\Unveil] [--json] 
 
 ## 9. Edge cases to handle
 
-- Desktop or VM with no battery â†’ friendly "No battery detected" message, exit code 10
-- WMI battery classes missing or empty â†’ fall back to the battery report XML only
-- Cycle count of 0 or missing â†’ "Not reported by manufacturer"
-- Design capacity of 0 (some cheap batteries) â†’ health "Unknown", no false "Replace"
-- AC connected during the drain test â†’ prompt to unplug and allow "skip"
-- Non-English Windows â†’ parse XML outputs only, never localised text output
-- powercfg commands time out or fail â†’ log, skip the section, keep going
-- ARM64 devices (Snapdragon) â†’ verify the WMI classes and perf counters work
+- Desktop or VM with no battery → friendly "No battery detected" message, exit code 10
+- WMI battery classes missing or empty → fall back to the battery report XML only
+- Cycle count of 0 or missing → "Not reported by manufacturer"
+- Design capacity of 0 (some cheap batteries) → health "Unknown", no false "Replace"
+- AC connected during the drain test → prompt to unplug and allow "skip"
+- Non-English Windows → parse XML outputs only, never localised text output
+- powercfg commands time out or fail → log, skip the section, keep going
+- ARM64 devices (Snapdragon) → verify the WMI classes and perf counters work
 
 ## 10. Project structure
 
@@ -239,7 +239,7 @@ Unveil/
 
 ## 11. Build phases
 
-1. **Core battery data.** WMI readers plus battery report XML parser, health calculation, console output. *Test on 2â€“3 different OEM laptops.*
+1. **Core battery data.** WMI readers plus battery report XML parser, health calculation, console output. *Test on 2–3 different OEM laptops.*
 2. **Verdict engine + JSON/HTML report.** With unit tests using fixture files.
 3. **WPF UI.** Dashboard, health gauge, capacity history chart.
 4. **Live drain test + process sampler.** Guided unplug flow, Power Impact scoring, app grouping.
@@ -251,7 +251,7 @@ Unveil/
 ## 12. Definition of done
 
 - Runs from a USB stick on a clean Windows 11 laptop with no prerequisites
-- Full test completes in â‰¤ 2 minutes and produces a verdict
+- Full test completes in ≤ 2 minutes and produces a verdict
 - HTML report is readable by a non-technical customer
 - CLI mode works from an RMM script and returns correct exit codes
 - No crashes on a desktop, VM or machine with missing battery data

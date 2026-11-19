@@ -1,4 +1,4 @@
-﻿# Unveil
+# Unveil
 *See what's really draining your battery.*
 
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
@@ -35,7 +35,8 @@ result with `SHA256SUMS.txt` on the release.
 - **Export report** saves an HTML report for the customer (printable to PDF) and the JSON data. **Copy summary**
   copies a short text summary for the ticket.
 - **Since the last check:** export a report on every visit. Next time Unveil finds the latest earlier `unveil-*.json`
-  for that laptop (next to Unveil.exe, on the Desktop, in Documents or in Downloads) and shows the change in health,
+  for that laptop (next to Unveil.exe, on the Desktop, in Documents, in Downloads or in the N-sight reports folder)
+  and shows the change in health,
   capacity, cycles, verdict and power draw. A replaced battery is recognised. **Compare with a report...** picks one by
   hand.
 - **Details > Data notes > Save samples** saves the raw data with serial numbers, names, account IDs and Wi-Fi details
@@ -59,7 +60,7 @@ from N-sight, with no window. Each time it runs it:
 3. saves the full HTML and JSON report in `C:\ProgramData\Unveil\Reports\` (the newest 30 runs are kept, and each
    report shows "Since the last check");
 4. prints one line for the dashboard, for example
-   `Battery worn: 66% health, 442 cycles. Test: plugged in, apps only; top: AnyDesk 26%. Sleep: 2.1%/h. Report: unveil-â€¦html`
+   `Battery worn: 66% health, 442 cycles. Test: plugged in, apps only; top: AnyDesk 26%. Sleep: 2.1%/h. Report: unveil-…html`
 
 **Set it up once** (needs a Superuser or Administrator N-sight login):
 1. **Settings > Script Manager > New**: upload `Unveil-NSight.ps1`, name it (e.g. "Unveil battery check") and set
