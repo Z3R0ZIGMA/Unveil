@@ -26,6 +26,8 @@ public class KnownOffendersTests
     [InlineData("AnyDesk", "Remote access tool")]
     [InlineData("TeamViewer", "Remote access tool")]
     [InlineData("rdpclip", "Remote access tool")]
+    [InlineData("AsusSystemAnalysis", "RGB / OEM utility")]
+    [InlineData("AsusCcSystemAnalysis", "RGB / OEM utility")]
     public void Known_names_are_matched_case_insensitively(string name, string category)
     {
         Assert.Equal(category, KnownOffenders.Match(name, 1)?.Category);

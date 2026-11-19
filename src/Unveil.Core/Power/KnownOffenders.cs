@@ -56,7 +56,9 @@ public static class KnownOffenders
         ("Crypto miner", "A cryptocurrency miner was running. If the customer did not install it on purpose, treat it as malware and remove it.",
             ["xmrig", "nicehash", "nicehashminer", "excavator", "ethminer", "nbminer", "t-rex", "trex", "phoenixminer", "lolminer", "gminer", "teamredminer", "cgminer", "bfgminer", "nanominer"]),
         ("RGB / OEM utility", "Lighting and vendor utilities often run all the time. Turn off or uninstall the ones the customer does not use.",
-            ["icue", "corsair.service", "lightingservice", "armourycrate.service", "armourycrate.usersessionhelper", "asusoptimization", "razer synapse service", "razercentralservice", "rzsdkservice", "lghub", "lghub_agent", "lghub_updater", "nahimicsvc64", "nahimicsvc32", "signalrgb", "openrgb", "msi.centralserver", "dragoncenter", "supportassistagent", "dell.techhub", "hpsysinfo", "hpcommrecovery", "lenovovantageservice", "lenovo.modern.imcontroller", "alienwarecc"]),
+            ["icue", "corsair.service", "lightingservice", "armourycrate.service", "armourycrate.usersessionhelper", "asusoptimization",
+             // MyASUS / ASUS Business system analysis and diagnostics (the top app on the dev ASUS when idle)
+             "asussystemanalysis", "asusccsystemanalysis", "asussystemdiagnosis", "asussoftwaremanager", "asussoftwaremanageragent", "razer synapse service", "razercentralservice", "rzsdkservice", "lghub", "lghub_agent", "lghub_updater", "nahimicsvc64", "nahimicsvc32", "signalrgb", "openrgb", "msi.centralserver", "dragoncenter", "supportassistagent", "dell.techhub", "hpsysinfo", "hpcommrecovery", "lenovovantageservice", "lenovo.modern.imcontroller", "alienwarecc"]),
     ];
 
     private static readonly Dictionary<string, KnownOffender> ByName = Groups

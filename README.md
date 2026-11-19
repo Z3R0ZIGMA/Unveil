@@ -1,10 +1,10 @@
-# Unveil
+﻿# Unveil
 *See what's really draining your battery.*
 
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
 battery is worn out or something on the laptop is draining it.
 
-**Version 0.9.0.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
+**Version 0.9.1.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
 
 - [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
@@ -59,7 +59,7 @@ from N-sight, with no window. Each time it runs it:
 3. saves the full HTML and JSON report in `C:\ProgramData\Unveil\Reports\` (the newest 30 runs are kept, and each
    report shows "Since the last check");
 4. prints one line for the dashboard, for example
-   `Battery worn: 66% health, 442 cycles. Test: plugged in, apps only; top: AnyDesk 26%. Sleep: 2.1%/h. Report: unveil-…html`
+   `Battery worn: 66% health, 442 cycles. Test: plugged in, apps only; top: AnyDesk 26%. Sleep: 2.1%/h. Report: unveil-â€¦html`
 
 **Set it up once** (needs a Superuser or Administrator N-sight login):
 1. **Settings > Script Manager > New**: upload `Unveil-NSight.ps1`, name it (e.g. "Unveil battery check") and set

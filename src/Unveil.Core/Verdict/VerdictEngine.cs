@@ -51,7 +51,9 @@ public static class VerdictEngine
             drainResult = drainResult with
             {
                 Status = drainResult.Status is DrainStatus.High ? DrainStatus.High : DrainStatus.Elevated,
-                Cause = drainResult.Cause is null ? sleepCause : $"{drainResult.Cause}, and {sleepCause}",
+                Cause = drainResult.Cause is null ? sleepCause
+                    : drainResult.AppsWhilePluggedIn ? $"{drainResult.Cause}. It is also {sleepCause}"
+                    : $"{drainResult.Cause}, and {sleepCause}",
             };
         }
 
@@ -283,7 +285,11 @@ public static class VerdictEngine
 
     // ---------------------------------------------------------------- drain
 
-    private sealed record DrainAssessment(DrainStatus Status, DrainMeasurement? Measurement, string? Cause, bool AppsIdle = false);
+    /// <param name="AppsWhilePluggedIn">
+    /// The charger stayed connected, so nothing was drained during the test: the cause is apps that used a lot of power,
+    /// and the verdict must not say the battery "is being drained".
+    /// </param>
+    private sealed record DrainAssessment(DrainStatus Status, DrainMeasurement? Measurement, string? Cause, bool AppsIdle = false, bool AppsWhilePluggedIn = false);
 
     private static DrainAssessment AssessDrain(DrainMeasurement? drain, VerdictSettings settings, List<Finding> evidence)
     {
@@ -348,6 +354,10 @@ public static class VerdictEngine
             status = status == DrainStatus.Normal ? DrainStatus.Elevated : status;
             var apps = string.Join(", ", dominant.Select(a => $"{a.Name} ({Percent(a.SharePercent, "0")} of power)"));
             cause = cause is null ? apps : $"{cause}, mostly from {apps}";
+            if (drain.AverageWatts is null)
+            {
+                return new DrainAssessment(status, drain, cause, AppsWhilePluggedIn: true);
+            }
         }
 
         // High draw with the apps idle: the screen, settings or hardware are using the power, not software.
@@ -424,6 +434,10 @@ public static class VerdictEngine
         var holds = health is { } h ? $"{who} holds {Percent(h, "0")} of its original capacity." : null;
         var drainText = drain.Cause ?? "apps or settings";
 
+        // Plugged in, nothing drained the battery during the test: say what used the power instead.
+        var plugged = drain.AppsWhilePluggedIn;
+        var usedALot = $"Apps used a lot of power during the test (the charger was connected): {drainText}.";
+
         VerdictKind kind;
         Severity severity;
         string title;
@@ -444,7 +458,7 @@ public static class VerdictEngine
                 kind = VerdictKind.SoftwareDrain;
                 severity = drain.Status == DrainStatus.High ? Severity.Danger : Severity.Warning;
                 title = "Software/settings issue";
-                message = $"The battery is fine; it is being drained by {drainText}.";
+                message = plugged ? $"The battery is fine. {usedALot}" : $"The battery is fine; it is being drained by {drainText}.";
                 break;
 
             case BatteryCondition.Worn when !drainBad:
@@ -458,7 +472,9 @@ public static class VerdictEngine
                 kind = VerdictKind.Both;
                 severity = Severity.Warning;
                 title = "Battery worn and software drain";
-                message = $"The battery is being drained by {drainText}. The battery is also worn: {Lower(holds)}";
+                message = plugged
+                    ? $"{usedALot} The battery is also worn: {Lower(holds)}"
+                    : $"The battery is being drained by {drainText}. The battery is also worn: {Lower(holds)}";
                 break;
 
             case BatteryCondition.Replace when !drainBad:
@@ -472,14 +488,18 @@ public static class VerdictEngine
                 kind = VerdictKind.Both;
                 severity = Severity.Danger;
                 title = "Replace battery and fix drain";
-                message = $"{ReplaceMessage(battery, holds, settings)} It is also being drained by {drainText}.";
+                message = plugged
+                    ? $"{ReplaceMessage(battery, holds, settings)} {usedALot}"
+                    : $"{ReplaceMessage(battery, holds, settings)} It is also being drained by {drainText}.";
                 break;
 
             case BatteryCondition.Unknown when drainBad:
                 kind = VerdictKind.SoftwareDrain;
                 severity = drain.Status == DrainStatus.High ? Severity.Danger : Severity.Warning;
                 title = "Software/settings issue";
-                message = $"The battery is being drained by {drainText}. Battery health could not be measured.";
+                message = plugged
+                    ? $"{usedALot} Battery health could not be measured."
+                    : $"The battery is being drained by {drainText}. Battery health could not be measured.";
                 break;
 
             default:

@@ -331,6 +331,26 @@ public class VerdictEngineDrainTests
 
         Assert.Equal(VerdictKind.SoftwareDrain, v.Kind);
         Assert.Contains("Teams (45% of power)", v.Message);
+        // Nothing drained the battery while plugged in: the message must not say it did.
+        Assert.Equal("The battery is fine. Apps used a lot of power during the test (the charger was connected): Teams (45% of power).", v.Message);
+        Assert.DoesNotContain("drained", v.Message);
+    }
+
+    [Fact]
+    public void Plugged_in_apps_and_worn_battery_avoid_drain_wording()
+    {
+        var v = VerdictEngine.Evaluate(TestData.Snapshot(TestData.WithHealth(66)), Drain(null, true, new AppImpact("Teams", 45, Impact: 6)));
+
+        Assert.Equal(VerdictKind.Both, v.Kind);
+        Assert.StartsWith("Apps used a lot of power during the test (the charger was connected): Teams (45% of power). The battery is also worn:", v.Message);
+    }
+
+    [Fact]
+    public void Measured_drain_on_battery_keeps_the_drain_wording()
+    {
+        var v = VerdictEngine.Evaluate(TestData.Snapshot(TestData.WithHealth(90)), Drain(20, false, new AppImpact("Teams", 45, Impact: 6)));
+
+        Assert.StartsWith("The battery is fine; it is being drained by a power draw of 20.0 W, mostly from Teams (45% of power).", v.Message);
     }
 
     [Fact]
