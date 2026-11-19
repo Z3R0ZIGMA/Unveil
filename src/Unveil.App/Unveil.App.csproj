@@ -7,6 +7,8 @@
     <AssemblyName>Unveil</AssemblyName>
     <RootNamespace>Unveil.App</RootNamespace>
     <ApplicationIcon>unveil.ico</ApplicationIcon>
+    <!-- Program.Main runs the no-window N-sight mode (rmm) before any WPF starts -->
+    <StartupObject>Unveil.App.Program</StartupObject>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 

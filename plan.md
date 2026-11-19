@@ -4,11 +4,14 @@
 
 ## Changes since the plan (decided during the build)
 
-**Status (version 0.8.3):** all eight phases are done. Code signing is deferred.
+**Status (version 0.9.0):** all eight phases are done. Code signing is deferred.
 
-- **Who uses it:** a technician runs `Unveil.exe` on the client's laptop. There is no RMM or command-line use.
-- **Removed:** CLI mode (section 7, the `--cli` switch, exit codes, `Unveil.Cli.exe`) and report branding (company
-  name/logo/footer in sections 6 and 8). The HTML report always says "Unveil".
+- **Who uses it:** a technician runs `Unveil.exe` on the client's laptop, or runs it from N-able N-sight RMM (0.9.0).
+- **Removed:** the generic CLI mode from section 7 (the `--cli` switch, console output, `Unveil.Cli.exe`) and report
+  branding (company name/logo/footer in sections 6 and 8). The HTML report always says "Unveil".
+- **RMM, N-sight only (0.9.0):** `rmm/Unveil-NSight.ps1` downloads and runs `Unveil.exe --rmm` as the system account,
+  saves reports in `C:\ProgramData\Unveil\Reports`, prints one line (N-sight shows 255 characters) and exits 0 (pass)
+  or above 1000 (fail), as N-sight requires. See README.md, "Run it from N-able N-sight RMM".
 - **Removed:** the "Find replacement" button (sections 3 and 5). Batteries are ordered from a supplier; Unveil shows the
   laptop model, battery name and any part hint, and makes no outbound connections at all.
 - **Deferred:** code signing (Phase 8). The user will handle it later; until then the release README explains the
@@ -28,7 +31,7 @@
   Wi-Fi network names, MAC addresses, account SIDs and user folder names (section 2 asked only for no telemetry and
   no network calls).
 - **Docs:** user guide in README.md; building, testing and ground rules in [DEVELOPMENT.md](DEVELOPMENT.md).
-- **Section 1 and 7:** "push it through RMM" no longer applies; Unveil is always run interactively.
+- **Section 1 and 7:** "push it through RMM" is done the N-sight way above, not with section 7's command line.
 
 ## 1. Purpose
 

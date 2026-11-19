@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Builds the release: a single-file, self-contained Unveil.exe for win-x64 and win-arm64.
 
@@ -6,7 +6,7 @@
   Output: dist\Unveil-<version>\win-x64\ and dist\Unveil-<version>\win-arm64\, each with
     Unveil.exe    the app (no .NET install needed on the laptop)
     README.txt    how to use it
-  and dist\Unveil-<version>\github\ with what goes on the GitHub release: Unveil.exe (x64), Unveil-arm64.exe and
+  and dist\Unveil-<version>\github\ with what goes on the GitHub release: Unveil.exe (x64), Unveil-arm64.exe, Unveil-NSight.ps1 and
   SHA256SUMS.txt. unveil.json (thresholds) is created next to Unveil.exe on first run.
 
   Publish settings (self-contained, single file) live in the .csproj, not here.
@@ -71,7 +71,8 @@ $github = Join-Path $dist "github"
 New-Item -ItemType Directory -Force $github | Out-Null
 Copy-Item (Join-Path $dist "win-x64\Unveil.exe") (Join-Path $github "Unveil.exe")
 Copy-Item (Join-Path $dist "win-arm64\Unveil.exe") (Join-Path $github "Unveil-arm64.exe")
-$sums = Get-ChildItem $github -File -Filter *.exe | Sort-Object Name | ForEach-Object {
+Copy-Item (Join-Path $root "rmm\Unveil-NSight.ps1") (Join-Path $github "Unveil-NSight.ps1")   # for N-sight's Script Manager
+$sums = Get-ChildItem $github -File | Where-Object { $_.Extension -in ".exe", ".ps1" } | Sort-Object Name | ForEach-Object {
     "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
 }
 $sums | Set-Content (Join-Path $github "SHA256SUMS.txt") -Encoding ASCII

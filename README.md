@@ -4,7 +4,7 @@
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
 battery is worn out or something on the laptop is draining it.
 
-**Version 0.8.3.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
+**Version 0.9.0.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
 
 - [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
@@ -48,6 +48,49 @@ the power draw.
 
 Unveil only reads: it never changes settings. Apply the advice yourself, with the customer's agreement.
 
+## Run it from N-able N-sight RMM
+The script [`rmm/Unveil-NSight.ps1`](rmm/Unveil-NSight.ps1) (also attached to each release) runs Unveil on a laptop
+from N-sight, with no window. Each time it runs it:
+1. downloads `Unveil.exe` from the latest release into `C:\ProgramData\Unveil\` if it has changed, and checks it
+   against the release's `SHA256SUMS.txt`;
+2. runs the whole check as the system account: battery, power settings (the signed-in user's startup apps), energy
+   history and sleep study, and a 60-second test. The test measures watts only if the laptop is on battery at the
+   time; plugged in, it ranks the apps by activity only;
+3. saves the full HTML and JSON report in `C:\ProgramData\Unveil\Reports\` (the newest 30 runs are kept, and each
+   report shows "Since the last check");
+4. prints one line for the dashboard, for example
+   `Battery worn: 66% health, 442 cycles. Test: plugged in, apps only; top: AnyDesk 26%. Sleep: 2.1%/h. Report: unveil-…html`
+
+**Set it up once** (needs a Superuser or Administrator N-sight login):
+1. **Settings > Script Manager > New**: upload `Unveil-NSight.ps1`, name it (e.g. "Unveil battery check") and set
+   the timeout to **360 seconds** (450 with `-EnergyDiagnostics`).
+2. **One laptop, now:** on the device, add the script as an **Automated Task** and run it. The line appears in the
+   task's output.
+3. **Ongoing:** add it to laptops as a **Script Check** (for example daily). A pass shows green, with the line.
+4. **Full report:** **Remote Background > Advanced features > File transfer**, browse to
+   `C:\ProgramData\Unveil\Reports\` and download the newest `.html`.
+
+**Options** (N-sight's "Command Line" box): `-TestSeconds 60` (0 skips the test), `-EnergyDiagnostics` (Windows'
+60-second energy check), `-Version 0.9.0` (use that release instead of the latest: pin it so clients update only when
+you choose), `-NoDownload` (use the `Unveil.exe` already in `C:\ProgramData\Unveil\`, e.g. one you copied there with
+File transfer, for laptops that cannot reach github.com), `-Keep 30` (reports to keep).
+
+**Pass or fail** (N-sight shows a fail for any code above 0):
+
+| Code | Result |
+|---|---|
+| 0 | Pass: battery healthy, inconclusive (health can't be measured), or no battery |
+| 1001 | Software or settings issue |
+| 1002 | Battery worn (60-79% health) |
+| 1003 | Replace battery |
+| 1004 | Battery worn or failing **and** software drain |
+| 1010 | Unveil failed (the line says why) |
+| 1011 | Unveil could not be downloaded and no copy is on the laptop |
+| 1012 | Unveil was blocked (antivirus or Smart App Control) or did not finish in time |
+
+If the antivirus quarantines `Unveil.exe` (it is not code-signed yet), allow `C:\ProgramData\Unveil\` in the Managed
+AV policy.
+
 ## unveil.json
 Created next to `Unveil.exe` on first run. Every value is optional. Anything missing or invalid falls back to the
 default (shown under Data notes), and a broken file is never overwritten.
@@ -69,7 +112,10 @@ apps that use power, shows it on screen, and writes files only where the technic
 - **Unveil changes nothing.** It only reads settings; it never changes power settings, startup apps, drivers or the
   registry.
 - **Administrator access is optional.** Unveil runs as a standard user. It asks Windows for administrator access (a UAC
-  prompt) only when the technician clicks "Restart as administrator".
+  prompt) only when the technician clicks "Restart as administrator". From N-sight it runs as the system account,
+  which has administrator rights.
+- **From N-sight**, the script (not Unveil) downloads `Unveil.exe` from this project's GitHub releases. That is the only
+  network use, and it sends nothing about the laptop.
 
 ### What Unveil reads
 All of this is read on the laptop itself, with Windows' own tools and APIs:
@@ -93,6 +139,9 @@ Windows' battery report also contains the computer name. Unveil does not show it
 - **Samples** (`Details > Data notes > Save samples`): raw data, saved only where the technician chooses, with
   identifying details removed (see below).
 - **Clipboard** (`Copy summary`): a short text summary, when the technician clicks the button.
+- **From N-sight:** `C:\ProgramData\Unveil\` holds `Unveil.exe`, `unveil.json`, `SHA256SUMS.txt`, `last-result.txt`
+  (the last dashboard line) and `Reports\` (the newest 30 runs' reports; older ones are deleted). Delete the folder to
+  remove everything.
 
 ### What the reports contain
 Exported reports (HTML and JSON) and the copied summary are about the laptop, and contain **device identifiers**:
@@ -108,7 +157,8 @@ contents of any files.
 
 **For technicians:** treat exported reports as your client's data, handled under your own data-protection
 obligations and your agreement with the client. If you save reports on the client's laptop (for example so Unveil can
-compare on the next visit), tell the client and delete them when they are no longer needed.
+compare on the next visit, or when it runs from N-sight), tell the client and delete them when they are no longer
+needed.
 
 ### Comparing with an earlier report
 To show "Since the last check", Unveil looks for earlier reports named `unveil-*.json` in these places:
@@ -116,6 +166,7 @@ To show "Since the last check", Unveil looks for earlier reports named `unveil-*
 - the Desktop
 - Documents, and one subfolder below it
 - Downloads
+- `C:\ProgramData\Unveil\Reports\` (reports from N-sight runs)
 
 It only reads those files; it does not open other files or search anywhere else. It keeps only the file name, never
 the full path.

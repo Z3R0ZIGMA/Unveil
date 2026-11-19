@@ -59,6 +59,9 @@ public sealed partial class MainViewModel
         yield return (Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), 0);
         yield return (Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), 1);
         yield return (Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads"), 0);
+
+        // Reports from N-sight runs on this laptop.
+        yield return (Unveil.Core.Rmm.RmmOptions.DefaultReportFolder, 0);
     }
 
     /// <summary>Once per run: looks for the latest earlier report for this laptop. Never throws.</summary>
@@ -76,7 +79,7 @@ public sealed partial class MainViewModel
             var found = await Task.Run(() => PreviousReportFinder.FindLatest(ReportFolders(), report, _sessionStart.AddMinutes(-1), log));
             _previous = found?.Report;
             _comparisonSearchNote = found is null
-                ? "Comparison: no earlier report for this laptop was found next to Unveil.exe, on the Desktop, in Documents or in Downloads."
+                ? "Comparison: no earlier report for this laptop was found next to Unveil.exe, on the Desktop, in Documents, in Downloads or in the N-sight reports folder."
                 : log.Entries.LastOrDefault()?.Message;
         }
 #pragma warning disable CA1031 // A failed search must never stop the check.

@@ -51,7 +51,7 @@ public sealed partial class PowerSettingsReader : IPowerSettingsSource
             SleepOnBattery = scheme is { } s3 ? Try(log, "sleep timeout", () => Seconds(ReadDc(s3, SubSleep, StandbyIdle))) : null,
             BrightnessPercent = Try(log, "screen brightness", ReadBrightness),
             RefreshRateHz = adapters.Select(a => a.RefreshRate).Where(r => r is > 0).Max(),
-            StartupApps = Try(log, "startup apps", StartupApps.Read) ?? [],
+            StartupApps = Try(log, "startup apps", () => StartupApps.Read(log)) ?? [],
             GraphicsAdapters = adapters.Select(a => a.Name).ToList(),
             DiscreteGpu = gpu?.DiscreteName,
             DiscreteGpuActive = gpu?.Active,
@@ -232,14 +232,58 @@ public static class StartupApps
 {
     private const string Approved = @"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\";
 
-    public static IReadOnlyList<StartupApp> Read()
+    public static IReadOnlyList<StartupApp> Read() => Read(null);
+
+    /// <summary>
+    /// Run as the system account (from N-sight), "this user" would be the system account itself: the signed-in
+    /// user's own entries are read from their registry hive and profile instead, or skipped if nobody is signed in.
+    /// </summary>
+    public static IReadOnlyList<StartupApp> Read(CollectionLog? log)
     {
         var apps = new List<StartupApp>();
-        AddRunKey(apps, Registry.CurrentUser, @"Software\Microsoft\Windows\CurrentVersion\Run", "Run (this user)", Approved + "Run");
-        AddRunKey(apps, Registry.LocalMachine, @"Software\Microsoft\Windows\CurrentVersion\Run", "Run (all users)", Approved + "Run");
-        AddRunKey(apps, Registry.LocalMachine, @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run", "Run (all users, 32-bit)", Approved + "Run32");
-        AddFolder(apps, Environment.GetFolderPath(Environment.SpecialFolder.Startup), "Startup folder (this user)", Registry.CurrentUser);
-        AddFolder(apps, Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), "Startup folder (all users)", Registry.LocalMachine);
+        RegistryKey? userHive = Registry.CurrentUser;
+        string? userStartup = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+        RegistryKey? opened = null;
+
+        if (System.Security.Principal.WindowsIdentity.GetCurrent().IsSystem)
+        {
+            if (ConsoleUser.Find() is { } user && Registry.Users.OpenSubKey(user.Sid) is { } hive)
+            {
+                opened = userHive = hive;
+                userStartup = user.ProfilePath is { } profile
+                    ? Path.Combine(profile, @"AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup")
+                    : null;
+                log?.Info("Settings", "Running as the system account: startup apps are read for the signed-in user.");
+            }
+            else
+            {
+                userHive = null;
+                userStartup = null;
+                log?.Info("Settings", "Running as the system account with nobody signed in: per-user startup apps were skipped.");
+            }
+        }
+
+        try
+        {
+            if (userHive is not null)
+            {
+                AddRunKey(apps, userHive, @"Software\Microsoft\Windows\CurrentVersion\Run", "Run (this user)", Approved + "Run");
+            }
+
+            AddRunKey(apps, Registry.LocalMachine, @"Software\Microsoft\Windows\CurrentVersion\Run", "Run (all users)", Approved + "Run");
+            AddRunKey(apps, Registry.LocalMachine, @"Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run", "Run (all users, 32-bit)", Approved + "Run32");
+            if (userHive is not null && userStartup is not null)
+            {
+                AddFolder(apps, userStartup, "Startup folder (this user)", userHive);
+            }
+
+            AddFolder(apps, Environment.GetFolderPath(Environment.SpecialFolder.CommonStartup), "Startup folder (all users)", Registry.LocalMachine);
+        }
+        finally
+        {
+            opened?.Dispose();
+        }
+
         return apps;
     }
 

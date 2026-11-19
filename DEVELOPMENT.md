@@ -21,15 +21,30 @@ powershell -ExecutionPolicy Bypass -File build\publish.ps1
 This builds `dist\Unveil-<version>\` and deletes older `dist\Unveil-*` folders (past versions stay on the GitHub
 releases page):
 - `win-x64\` and `win-arm64\`, each with `Unveil.exe` and a `README.txt` (for a USB stick)
-- `github\`, exactly what goes on the GitHub release: `Unveil.exe` (x64), `Unveil-arm64.exe` and `SHA256SUMS.txt`
+- `github\`, exactly what goes on the GitHub release: `Unveil.exe` (x64), `Unveil-arm64.exe`, `Unveil-NSight.ps1` and
+  `SHA256SUMS.txt`. The N-sight script downloads these by name, so never rename them.
 
 The release offers the exes themselves, not zips. Windows marks downloaded files as coming from the internet, and
 unzipping with Windows copies that mark onto the exe inside, so SmartScreen checks it again when it is opened. Unveil
 is not code-signed, so SmartScreen can still warn about a new download in some cases; signing is for later.
 
 ```
-gh release create v<version> dist\Unveil-<version>\github\Unveil.exe dist\Unveil-<version>\github\Unveil-arm64.exe dist\Unveil-<version>\github\SHA256SUMS.txt --title "Unveil <version>" --notes-file <notes.md>
+gh release create v<version> (Get-ChildItem dist\Unveil-<version>\github\*).FullName --title "Unveil <version>" --notes-file <notes.md>
 ```
+
+## N-sight RMM mode
+`Unveil.exe --rmm [--test-seconds N] [--energy] [--out <folder>] [--result <file>] [--keep N]` runs the whole check with
+no window and returns the result as the exit code (see README.md for the codes). `Program.Main` handles it before any
+WPF code starts; the logic is in `src/Unveil.Core/Rmm/RmmMode.cs`. `rmm/Unveil-NSight.ps1` is what N-sight runs.
+
+Test it as a standard user:
+```
+powershell -ExecutionPolicy Bypass -File rmm\Unveil-NSight.ps1 -Folder <folder with a built Unveil.exe> -NoDownload -TestSeconds 10
+```
+To test it as N-sight runs it (Local System, no desktop), register a temporary scheduled task as `SYSTEM` that runs the
+script with `-NoDownload` and writes its output to a file, start it, then unregister it. That needs one elevated
+PowerShell (UAC). Things that only show up as SYSTEM: per-user settings come from the signed-in user
+(`ConsoleUser`), the admin checks run, and no window or dialog may ever appear.
 
 The version comes from `Directory.Build.props`. The publish settings (self-contained, single file, both runtimes) live
 in `src/Unveil.App/Unveil.App.csproj`, never in a `.pubxml`.
@@ -51,6 +66,7 @@ src/Unveil.Core/          data collection, parsing, verdict and reports (no UI c
   Verdict/                verdict engine and capacity trend check
   Power/                  drain test, process sampler, Power Impact, app names, Windows process names, known offenders
   Admin/                  energy history (SRUM), sleep study and energy diagnostics; admin collector; sample export and scrubber
+  Rmm/                    the no-window N-sight mode: options, exit codes, the one-line result, report retention
   Config/                 unveil.json model, loader and validation
   Reports/                JSON export, HTML report, ticket summary, comparison with an earlier report
 src/Unveil.App/           Unveil.exe: WPF app (MVVM without libraries), Themes/Theme.xaml, Controls/ (gauge, charts)
