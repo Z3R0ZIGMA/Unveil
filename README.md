@@ -4,7 +4,7 @@
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
 battery is worn out or something on the laptop is draining it.
 
-**Version 0.9.2.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
+**Version 0.9.3.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
 
 - [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
@@ -73,7 +73,7 @@ from N-sight, with no window. Each time it runs it:
    `C:\ProgramData\Unveil\Reports\` and download the newest `.html`.
 
 **Options** (N-sight's "Command Line" box): `-TestSeconds 60` (0 skips the test), `-EnergyDiagnostics` (Windows'
-60-second energy check), `-Version 0.9.2` (use that release instead of the latest: pin it so clients update only when
+60-second energy check), `-Version 0.9.3` (use that release instead of the latest: pin it so clients update only when
 you choose), `-NoDownload` (use the `Unveil.exe` already in `C:\ProgramData\Unveil\`, e.g. one you copied there with
 File transfer, for laptops that cannot reach github.com), `-Keep 30` (reports to keep), `-ReportOnly` (pass whatever
 Unveil finds; only real failures, 1010-1012, still fail).

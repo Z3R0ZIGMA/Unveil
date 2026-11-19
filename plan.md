@@ -4,7 +4,7 @@
 
 ## Changes since the plan (decided during the build)
 
-**Status (version 0.9.2):** all eight phases are done. Code signing is deferred.
+**Status (version 0.9.3):** all eight phases are done. Code signing is deferred.
 
 - **Who uses it:** a technician runs `Unveil.exe` on the client's laptop, or runs it from N-able N-sight RMM (0.9.0).
 - **Removed:** the generic CLI mode from section 7 (the `--cli` switch, console output, `Unveil.Cli.exe`) and report

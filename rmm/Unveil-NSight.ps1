@@ -30,7 +30,7 @@
   Also run Windows' 60-second energy diagnostics (adds about a minute).
 
 .PARAMETER Version
-  The Unveil release to use, e.g. 0.9.2. Default "latest". Pin a version to update clients only when you choose.
+  The Unveil release to use, e.g. 0.9.3. Default "latest". Pin a version to update clients only when you choose.
 
 .PARAMETER NoDownload
   Use the Unveil.exe already in the folder; never download.
@@ -47,7 +47,7 @@
   Where Unveil.exe and the Reports folder live. Default C:\ProgramData\Unveil.
 
 .EXAMPLE
-  N-sight "Command Line" box:  -TestSeconds 60 -EnergyDiagnostics -Version 0.9.2
+  N-sight "Command Line" box:  -TestSeconds 60 -EnergyDiagnostics -Version 0.9.3
   Automated Task that should show green when it ran:  -ReportOnly
 #>
 param(
