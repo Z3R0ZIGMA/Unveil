@@ -19,6 +19,13 @@ push to `main` and every pull request (`.github/workflows/ci.yml`; actions are p
 (`.github/dependabot.yml`) proposes NuGet and Actions updates weekly, staying on the .NET 10 packages. `global.json`
 pins the SDK, and `.gitattributes` sets the line endings.
 
+Repository settings on GitHub: CodeQL code scanning (default setup: C#, Actions, Python), secret scanning with push
+protection, Dependabot alerts and security fixes, private vulnerability reporting, immutable releases, and actions
+must be pinned to a full commit SHA (a workflow with `uses: x@v1` fails). Pull requests are squash-merged and their
+branches deleted. Rulesets stop `main` and the `v*` tags from being deleted or overwritten. Issues use the form in
+`.github/ISSUE_TEMPLATE/` (blank issues are off), and [CONTRIBUTING.md](CONTRIBUTING.md) is the short guide for
+contributors.
+
 ## Release
 ```
 powershell -ExecutionPolicy Bypass -File build\publish.ps1

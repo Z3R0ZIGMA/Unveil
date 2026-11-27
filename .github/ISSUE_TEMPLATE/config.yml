@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Report a security problem
+    url: https://github.com/Z3R0ZIGMA/Unveil/security/advisories/new
+    about: Please report security problems privately, not as an issue.
+  - name: How to use Unveil
+    url: https://github.com/Z3R0ZIGMA/Unveil#use-it
+    about: The README explains the dashboard, the full test, reports and the N-sight mode.

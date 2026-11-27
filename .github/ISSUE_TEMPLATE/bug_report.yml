@@ -1,0 +1,54 @@
+name: Bug report
+description: Unveil showed something wrong, crashed, or the N-sight script failed.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Don't attach an exported report (.html or .json).** Reports contain the laptop and battery serial
+        numbers. Describe what you saw instead, or use Details > Data notes > Save samples, which removes serial
+        numbers, names, account IDs and Wi-Fi details. Security problems go to Security > Report a vulnerability,
+        not here.
+  - type: input
+    id: version
+    attributes:
+      label: Unveil version
+      description: Shown in the window title and header, or in the release you downloaded.
+      placeholder: "0.9.4"
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How was it run?
+      options:
+        - The app (double-clicked)
+        - The app, as administrator
+        - From N-able N-sight (Unveil-NSight.ps1)
+    validations:
+      required: true
+  - type: input
+    id: laptop
+    attributes:
+      label: Laptop make and model
+      description: No serial numbers, please.
+      placeholder: "ASUS B1400"
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: "Windows 11 24H2"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+      description: For N-sight, include the result line shown in the dashboard and the exit code.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Data notes
+      description: Anything listed under Details > Data notes in the app (check it for names before pasting).
