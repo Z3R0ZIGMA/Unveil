@@ -97,6 +97,7 @@ src/Unveil.Core/          data collection, parsing, verdict and reports (no UI c
   Power/                  drain test, process sampler, Power Impact, app names, Windows process names, known offenders
   Admin/                  energy history (SRUM), sleep study and energy diagnostics; admin collector; sample export and scrubber
   Rmm/                    the no-window N-sight mode: options, exit codes, the one-line result, report retention
+  Updates/                Check for updates: latest release from GitHub, checksum check, swapping the running exe
   Config/                 unveil.json model, loader and validation
   Reports/                JSON export, HTML report, ticket summary, comparison with an earlier report
 src/Unveil.App/           Unveil.exe: Program.cs (entry point, --rmm), WPF app (MVVM without libraries), Themes/Theme.xaml,
@@ -109,7 +110,9 @@ assets/                   the app icon and the script that draws it
 ```
 
 ## Ground rules
-- **No network calls and no telemetry** in Unveil, ever. The only download is the N-sight script fetching the release.
+- **No telemetry, and no network use except Check for updates** (when clicked: GitHub's `releases/latest` API, then
+  the release download, checked against `SHA256SUMS.txt`; `src/Unveil.Core/Updates/AppUpdate.cs`, the same design as
+  Unravel). `--rmm` never checks for updates. The only other download is the N-sight script fetching the release.
   See the Privacy section of [README.md](README.md#privacy), and keep it accurate when you change what Unveil reads or
   writes.
 - **Edit text files as UTF-8.** Windows PowerShell 5.1's `Get-Content`/`Set-Content` read UTF-8 files without a BOM

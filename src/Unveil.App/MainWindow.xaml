@@ -44,6 +44,8 @@
                 <!-- ============================================ toolbar -->
                 <DockPanel Margin="0,0,0,14" LastChildFill="True">
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="Check for updates" Command="{Binding CheckForUpdatesCommand}" Margin="0,0,8,0"
+                                ToolTip="Looks for a newer Unveil on GitHub and, if you agree, downloads and installs it (checked against the release's checksums). Nothing about the laptop is sent." />
                         <Button Command="{Binding RestartAsAdminCommand}" Margin="0,0,8,0"
                                 Visibility="{Binding IsAdministrator, Converter={StaticResource BoolToVis}, ConverterParameter=invert}"
                                 ToolTip="Adds energy use by app over recent days, the sleep study and Windows energy diagnostics">
@@ -816,7 +818,7 @@
                     </Border>
 
                     <TextBlock Style="{StaticResource MutedText}" FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,0"
-                               Text="All data is collected on this computer. Nothing is sent anywhere." />
+                               Text="All data is collected on this computer. Nothing about it is sent anywhere." />
                 </StackPanel>
             </StackPanel>
         </StackPanel>

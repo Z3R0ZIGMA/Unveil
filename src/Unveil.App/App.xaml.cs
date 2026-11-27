@@ -16,6 +16,9 @@ public partial class App : Application
         base.OnStartup(e);
         DispatcherUnhandledException += OnUnhandledException;
 
+        // After "Check for updates", the previous version is left as Unveil.exe.old until it has exited: remove it.
+        Unveil.Core.Updates.AppUpdate.CleanUpOldVersion(Environment.ProcessPath);
+
         // unveil.json next to the exe: thresholds, laptop type, test length, extra known offenders.
         var config = Unveil.Core.Config.ConfigLoader.Load(Unveil.Core.Config.ConfigLoader.ExeFolder);
         config.Config.ApplyKnownOffenders();

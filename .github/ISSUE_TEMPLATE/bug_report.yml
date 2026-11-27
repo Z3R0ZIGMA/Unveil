@@ -14,7 +14,7 @@ body:
     attributes:
       label: Unveil version
       description: Shown in the window title and header, or in the release you downloaded.
-      placeholder: "0.9.4"
+      placeholder: "0.9.5"
     validations:
       required: true
   - type: dropdown

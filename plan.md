@@ -4,7 +4,7 @@
 
 ## Changes since the plan (decided during the build)
 
-**Status (version 0.9.3):** all eight phases are done. Code signing is deferred.
+**Status (version 0.9.5):** all eight phases are done. Code signing is deferred.
 
 - **Who uses it:** a technician runs `Unveil.exe` on the client's laptop, or runs it from N-able N-sight RMM (0.9.0).
 - **Removed:** the generic CLI mode from section 7 (the `--cli` switch, console output, `Unveil.Cli.exe`) and report
@@ -32,6 +32,9 @@
   no network calls).
 - **Docs:** user guide in README.md; building, testing and ground rules in [DEVELOPMENT.md](DEVELOPMENT.md).
 - **Section 1 and 7:** "push it through RMM" is done the N-sight way above, not with section 7's command line.
+- **Check for updates (0.9.5, as in Unravel):** a toolbar button that, only when clicked, asks GitHub for
+  the latest release, downloads it after asking, checks it against `SHA256SUMS.txt` and replaces `Unveil.exe`. This is
+  the one exception to "no network calls" (section 2); nothing about the laptop is sent, and `--rmm` never uses it.
 
 ## 1. Purpose
 

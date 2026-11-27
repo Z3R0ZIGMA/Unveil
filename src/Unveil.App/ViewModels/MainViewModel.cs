@@ -28,6 +28,18 @@ public interface IUiServices
 
     /// <summary>Shows an open-file dialog. Returns the chosen file, or null if cancelled.</summary>
     string? PickOpenPath(string title, string filter);
+
+    /// <summary>Asks a yes/no question. True for yes.</summary>
+    bool Confirm(string message, string title);
+
+    /// <summary>Opens a web page in the default browser (only for Check for updates, which the user clicked).</summary>
+    void OpenUrl(string url);
+
+    /// <summary>Opens File Explorer with the file selected.</summary>
+    void ShowInFolder(string path);
+
+    /// <summary>Starts <paramref name="exe"/> (the updated Unveil) and closes this one.</summary>
+    void RestartInto(string exe);
 }
 
 public sealed record FindingItem(Severity Severity, string Text);
@@ -65,6 +77,7 @@ public sealed partial class MainViewModel : ObservableObject
         InitTest(createTest ?? Unveil.Core.Power.DrainTest.CreateDefault);
         InitAdmin();
         InitCompare();
+        InitUpdates();
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync, () => !IsBusy && Stage == TestStage.Idle);
         CopySummaryCommand = new RelayCommand(CopySummary, () => Report is not null);

@@ -56,12 +56,14 @@ Double-click Unveil.exe. Nothing to install; all data stays on the laptop.
   RMM" in https://github.com/Z3R0ZIGMA/Unveil#run-it-from-n-able-n-sight-rmm
 - Details > Data notes > Save samples: scrubbed raw data (no serials, names or network IDs) to improve
   support for new laptop models.
+- Check for updates: downloads a newer Unveil from GitHub (asks first, checks it against the release's
+  SHA256SUMS.txt) and replaces Unveil.exe.
 
 unveil.json is created next to Unveil.exe on first run. Edit it to change the thresholds (health, power
 draw limits per laptop type, sleep, settings checks) or to flag extra battery-draining apps.
 
-Privacy: Unveil makes no network connections and sends nothing anywhere. It only reads; it never changes
-settings. Exported reports contain the laptop and battery serial numbers: treat them as client data.
+Privacy: Unveil connects to the internet only when you click Check for updates (GitHub; nothing about
+the laptop is sent). It only reads; it never changes settings. Exported reports contain the laptop and battery serial numbers: treat them as client data.
 Details: https://github.com/Z3R0ZIGMA/Unveil/blob/main/README.md#privacy
 
 If Windows shows "Windows protected your PC", click More info > Run anyway (the app is not code-signed yet).

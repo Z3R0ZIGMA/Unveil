@@ -13,7 +13,9 @@ notes once the release is out.
 
 ## How Unveil is meant to run
 - The app runs as a standard user and only reads; it asks for administrator rights (UAC) only when the technician
-  clicks **Restart as administrator**. It makes no network connections (see the README's Privacy section).
+  clicks **Restart as administrator**. It connects to the internet only when the technician clicks **Check for updates**, which downloads the latest
+  release from this repository's GitHub releases and uses it only if it matches the release's `SHA256SUMS.txt` (see
+  the README's Privacy section).
 - From N-able N-sight it runs as Local System through `rmm/Unveil-NSight.ps1`. The script keeps `C:\ProgramData\Unveil`
   usable by SYSTEM and Administrators only (since 0.9.4), checks `Unveil.exe` against the release's `SHA256SUMS.txt`
   before every run, and never runs an exe that does not match.

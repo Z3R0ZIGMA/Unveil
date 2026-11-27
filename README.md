@@ -4,9 +4,10 @@
 A portable Windows app for IT technicians. Run it on a customer's laptop to find out, with evidence, whether the
 battery is worn out or something on the laptop is draining it.
 
-**Version 0.9.4.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
+**Version 0.9.5.** All the phases in [plan.md](plan.md) are done. Code signing comes later.
 
-- [Privacy](#privacy): what Unveil reads and writes. No network connections, no telemetry.
+- [Privacy](#privacy): what Unveil reads and writes. No telemetry; the only network use is Check for updates, when you
+  click it.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing and the project layout.
 - [SECURITY.md](SECURITY.md): how to report a security problem.
 - [CONTRIBUTING.md](CONTRIBUTING.md): reporting bugs and contributing.
@@ -44,6 +45,10 @@ result with `SHA256SUMS.txt` on the release.
   hand.
 - **Details > Data notes > Save samples** saves the raw data with serial numbers, names, account IDs and Wi-Fi details
   removed, so support for new laptop models can be added.
+- **Check for updates** (toolbar) asks GitHub whether a newer Unveil is out. If there is one, it asks first, then
+  downloads it, checks it against the release's `SHA256SUMS.txt` and replaces `Unveil.exe` (the old one is removed on
+  the next start), and offers to restart. If the folder can't be written to (a locked USB stick), the new version is
+  saved to Downloads instead.
 
 RMM and security agents (N-able, ConnectWise, NinjaOne, Datto, Kaseya and others), antivirus scans, Adobe Acrobat's
 background sync and remote-access tools (AnyDesk, TeamViewer, Splashtop, Remote Desktop and others) are labelled when
@@ -80,7 +85,7 @@ from N-sight, with no window. Each time it runs it:
    `C:\ProgramData\Unveil\Reports\` and download the newest `.html`.
 
 **Options** (N-sight's "Command Line" box): `-TestSeconds 60` (0 skips the test), `-EnergyDiagnostics` (Windows'
-60-second energy check), `-Version 0.9.4` (use that release instead of the latest: pin it so clients update only when
+60-second energy check), `-Version 0.9.5` (use that release instead of the latest: pin it so clients update only when
 you choose), `-NoDownload` (use the `Unveil.exe` already in `C:\ProgramData\Unveil\`, e.g. one you copied there with
 File transfer, for laptops that cannot reach github.com: run the script once first so it creates the locked-down
 folder, then copy the exe in), `-Keep 30` (reports to keep), `-ReportOnly` (pass whatever
@@ -117,16 +122,18 @@ Unveil is a diagnostic tool that a technician runs on a laptop. It reads informa
 apps that use power, shows it on screen, and writes files only where the technician asks it to.
 
 ### The short version
-- **Unveil makes no network connections.** It has no telemetry, analytics, crash reporting, update checks, accounts
-  or cloud features. Nothing is sent to the developer or anyone else.
+- **Unveil connects to the internet only when you click Check for updates.** It then asks GitHub (`api.github.com`)
+  for this project's latest release, with only Unveil's version as the user agent, and downloads the new exe from the
+  release if you agree. Nothing about the laptop is sent. It never checks on its own, and it has no telemetry,
+  analytics, crash reporting, accounts or cloud features. Nothing is sent to the developer or anyone else.
 - **Everything stays on the laptop** unless the technician saves a report or copies a summary and takes it elsewhere.
 - **Unveil changes nothing.** It only reads settings; it never changes power settings, startup apps, drivers or the
   registry.
 - **Administrator access is optional.** Unveil runs as a standard user. It asks Windows for administrator access (a UAC
   prompt) only when the technician clicks "Restart as administrator". From N-sight it runs as the system account,
   which has administrator rights.
-- **From N-sight**, the script (not Unveil) downloads `Unveil.exe` from this project's GitHub releases. That is the only
-  network use, and it sends nothing about the laptop.
+- **From N-sight**, the script (not Unveil) downloads `Unveil.exe` from this project's GitHub releases, and it sends
+  nothing about the laptop. Unveil itself makes no network connections when it runs from N-sight.
 
 ### What Unveil reads
 All of this is read on the laptop itself, with Windows' own tools and APIs:
@@ -150,6 +157,9 @@ Windows' battery report also contains the computer name. Unveil does not show it
 - **Samples** (`Details > Data notes > Save samples`): raw data, saved only where the technician chooses, with
   identifying details removed (see below).
 - **Clipboard** (`Copy summary`): a short text summary, when the technician clicks the button.
+- **Updates** (`Check for updates`, only after the technician agrees): the new version as `Unveil.exe.new` next to
+  `Unveil.exe`, which then replaces it; the old one is kept as `Unveil.exe.old` until the next start. If that folder
+  can't be written to, the new version is saved to Downloads instead.
 - **From N-sight:** `C:\ProgramData\Unveil\` (usable only by SYSTEM and Administrators) holds `Unveil.exe`, `unveil.json`, `SHA256SUMS.txt`, `last-result.txt`
   (the last dashboard line) and `Reports\` (the newest 30 runs' reports; older ones are deleted). Delete the folder to
   remove everything.

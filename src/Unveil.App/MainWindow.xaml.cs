@@ -87,6 +87,47 @@ public partial class MainWindow : Window, IUiServices
         }
     }
 
+    public bool Confirm(string message, string title) =>
+        MessageBox.Show(this, message, title, MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+    public void OpenUrl(string url)
+    {
+        try
+        {
+            using var _ = Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            // No browser: the status line already names the version to get.
+        }
+    }
+
+    public void ShowInFolder(string path)
+    {
+        try
+        {
+            using var _ = Process.Start(new ProcessStartInfo("explorer.exe") { ArgumentList = { "/select,", path } });
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            // The status line shows where the file is.
+        }
+    }
+
+    public void RestartInto(string exe)
+    {
+        try
+        {
+            // Started directly (not through the shell), so it runs with the same rights as this window.
+            using var _ = Process.Start(new ProcessStartInfo(exe) { UseShellExecute = false, WorkingDirectory = System.IO.Path.GetDirectoryName(exe) });
+            Application.Current.Shutdown();
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            MessageBox.Show(this, "The update is installed. Open Unveil again to use it.", "Unveil", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+    }
+
     public void OpenFile(string path)
     {
         try
